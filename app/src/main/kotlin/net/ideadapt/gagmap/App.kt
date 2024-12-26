@@ -56,10 +56,10 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
         val itemElement = items.item(i) as Element
         val itemTitle = itemElement.getSingleChildText("title")
 
-        if (!itemTitle.startsWith("GAG")) continue;
+        if (!itemTitle.startsWith("GAG")) continue // skip Feedback episodes (FGAG), or Bonus / Extra episodes.
 
         val episodeNumber = itemElement.getSingleChildText("itunes:episode").toInt()
-        val formattedEpisodeNumber = String.format("%02d", episodeNumber)
+        val formattedEpisodeNumber = String.format("%02d", episodeNumber) // two digits, with leading 0, e.g. 7 => '07'
         val pubDate = itemElement.getSingleChildText("pubDate")
         val contentEncoded = itemElement.getSingleChildText("content:encoded")
         val durationInSeconds = itemElement.getSingleChildText("itunes:duration").toLong()
@@ -67,9 +67,10 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
 
         // gadg.fm/362
         // geschichte.fm/podcast/zs104
+        // geschichte.fm/archiv/gag07
         val toSearch = contentEncoded
         val links = toSearch.takeIf { it.isNotEmpty() }?.let {
-            Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs)(\\d\\d\\d?)").findAll(it)
+            Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs|geschichte\\.fm/archiv/gag)(\\d\\d\\d?)").findAll(it)
                 .map { m ->
                     m.groupValues[2].toInt()
                 }
