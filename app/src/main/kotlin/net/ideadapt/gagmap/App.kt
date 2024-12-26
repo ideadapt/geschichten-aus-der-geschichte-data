@@ -58,32 +58,34 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
 
         if (!itemTitle.startsWith("GAG")) continue;
 
-        val episodeNumber = itemElement.getSingleChildText("itunes:episode")
-        val itemPubDate = itemElement.getSingleChildText("pubDate")
-        val itemContentEncoded = itemElement.getSingleChildText("content:encoded")
-        val itemDuration = itemElement.getSingleChildText("itunes:duration")
+        val episodeNumber = itemElement.getSingleChildText("itunes:episode").toInt()
+        val formattedEpisodeNumber = String.format("%02d", episodeNumber)
+        val pubDate = itemElement.getSingleChildText("pubDate")
+        val contentEncoded = itemElement.getSingleChildText("content:encoded")
+        val durationInSeconds = itemElement.getSingleChildText("itunes:duration").toLong()
         val audioUrl = itemElement.getSingleChild("enclosure").attributes.getNamedItem("url").textContent
-        val toSearch = itemContentEncoded.substringAfter("Related Episodes", missingDelimiterValue = "")
-            .ifEmpty { itemContentEncoded.substringAfter("Erwähnte Folgen", missingDelimiterValue = "") }
+
+        // gadg.fm/362
+        // geschichte.fm/podcast/zs104
+        val toSearch = contentEncoded
         val links = toSearch.takeIf { it.isNotEmpty() }?.let {
-            Regex("GAG(\\d\\d\\d?):").findAll(it).map { m -> m.groupValues[1].toInt() }
-        }.orEmpty().toList()
+            Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs)(\\d\\d\\d?)").findAll(it)
+                .map { m ->
+                    m.groupValues[2].toInt()
+                }
+        }
+            .orEmpty()
+            .filter { it != episodeNumber }
+            .toList()
 
         val episode = Episode(
-            id = episodeNumber.toInt(),
+            id = episodeNumber,
             title = itemTitle,
-            date = ZonedDateTime.parse(itemPubDate, DateTimeFormatter.RFC_1123_DATE_TIME)
-                .toInstant().toKotlinInstant(), // Wed, 29 May 2024 07:00:00 +0000
-            websiteUrl = URI(
-                "https://www.geschichte.fm/archiv/zs${
-                    String.format(
-                        "%02d",
-                        episodeNumber.toInt()
-                    )
-                }"
-            ),
+            // Wed, 29 May 2024 07:00:00 +0000
+            date = ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toKotlinInstant(),
+            websiteUrl = URI("https://www.geschichte.fm/archiv/zs$formattedEpisodeNumber"),
             audioUrl = URI(audioUrl),
-            durationInSeconds = itemDuration.toLong(),
+            durationInSeconds = durationInSeconds,
             episodeLinks = links,
             transcript = "",
             description = "...", // itemContentEncoded,
