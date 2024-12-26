@@ -1,0 +1,10 @@
+[versions]
+junit-jupiter-engine = "5.10.0"
+kotlin = "2.1.0"
+
+[libraries]
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter-engine" }
+
+[plugins]
+jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+ser = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
