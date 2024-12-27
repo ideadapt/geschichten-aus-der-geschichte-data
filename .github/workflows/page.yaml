@@ -1,0 +1,27 @@
+name: "Page"
+on:
+  workflow_dispatch: # allows to manually trigger the workflow, e.g. via GitHub web UI
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload static files as artifact
+        id: build
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write      # to deploy to Pages
+      id-token: write   # to verify the deployment originates from an appropriate source
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
