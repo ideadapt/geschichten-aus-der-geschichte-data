@@ -68,8 +68,7 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
         // gadg.fm/362
         // geschichte.fm/podcast/zs104
         // geschichte.fm/archiv/gag07
-        val toSearch = contentEncoded
-        val links = toSearch.takeIf { it.isNotEmpty() }?.let {
+        val links = contentEncoded.takeIf { it.isNotEmpty() }?.let {
             Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs|geschichte\\.fm/archiv/gag)(\\d\\d\\d?)").findAll(it)
                 .map { m ->
                     m.groupValues[2].toInt()
