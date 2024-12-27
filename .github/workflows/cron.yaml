@@ -1,0 +1,31 @@
+name: "Scheduled"
+
+on:
+  schedule:
+    - cron: "0 11 * * 3" # every Wednesday 11:00 UTC
+  workflow_dispatch: # allows to manually trigger the workflow, e.g. via GitHub web UI
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: build
+        run: ./gradlew build
+      - name: update data
+        run: |
+          java -jar ./worker/build/libs/worker-standalone.jar && \
+          git status --short | grep episodes || { echo "episodes.jsonl did not change"; exit 0; } && \
+          git add ./data/episodes.jsonl && \
+          git add ./data/feed.xml && \
+          git config user.name "ideadapt[workflow]" && \
+          git config user.email "1071386+ideadapt@users.noreply.github.com" && \
+          git commit -m "latest feed with extracted episodes $(date)" && \
+          git push
