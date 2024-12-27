@@ -1,4 +1,4 @@
-name: "Page"
+name: "Deploy page"
 on:
   workflow_dispatch: # allows to manually trigger the workflow, e.g. via GitHub web UI
 

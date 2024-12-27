@@ -1,4 +1,4 @@
-name: "Scheduled"
+name: "Update data"
 
 on:
   schedule:
