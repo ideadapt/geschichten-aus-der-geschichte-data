@@ -10,13 +10,14 @@ Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
 ## Metadaten
 
 * Titel
+* erwähnte Episoden
+* Beschreibung
 * Dauer
 * Link zur Audio-Datei
 * Erscheinungsdatum
 * Link zu Webseite
-* erwähnte Episoden
 
-Die Metadaten werden [automatisch](./.github/workflows/update-data.yaml) jede Woche aktualisiert und sind in diesem
+Die Metadaten werden [automatisch](./.github/workflows/update-data.yaml) jede Woche aktualisiert und sind hier in diesem
 Repository [abgelegt im JSONL Format](./data/episodes.jsonl).
 
 ## Visualisierung

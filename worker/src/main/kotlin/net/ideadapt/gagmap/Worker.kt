@@ -54,21 +54,23 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
     val episodes = mutableListOf<Episode>()
     for (i in 0 until items.length) {
         val itemElement = items.item(i) as Element
-        val itemTitle = itemElement.getSingleChildText("title")
+        val title = itemElement.getSingleChildText("title")
 
-        if (!itemTitle.startsWith("GAG")) continue // skip Feedback episodes (FGAG), or Bonus / Extra episodes.
+        if (!title.startsWith("GAG")) continue // skip Feedback (FGAG) or Bonus / Extra episodes.
 
         val episodeNumber = itemElement.getSingleChildText("itunes:episode").toInt()
-        val formattedEpisodeNumber = String.format("%02d", episodeNumber) // two digits, with leading 0, e.g. 7 => '07'
         val pubDate = itemElement.getSingleChildText("pubDate")
         val contentEncoded = itemElement.getSingleChildText("content:encoded")
+        val description = itemElement.getSingleChildText("description")
         val durationInSeconds = itemElement.getSingleChildText("itunes:duration").toLong()
         val audioUrl = itemElement.getSingleChild("enclosure").attributes.getNamedItem("url").textContent
 
+        // link format changed from zs270 to gag271.
+        // gadg.fm/{id} redirects to correct URL for given, unformatted episodeId.
         // gadg.fm/362
         // geschichte.fm/podcast/zs104
         // geschichte.fm/archiv/gag07
-        val links = contentEncoded.takeIf { it.isNotEmpty() }?.let {
+        val episodeLinks = contentEncoded.takeIf { it.isNotEmpty() }?.let {
             Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs|geschichte\\.fm/archiv/gag)(\\d\\d\\d?)").findAll(it)
                 .map { m ->
                     m.groupValues[2].toInt()
@@ -78,17 +80,32 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
             .filter { it != episodeNumber }
             .toList()
 
+        val descriptionNormalized = description
+            .lines()
+            .filter { it.isNotBlank() }
+            // ad block in description field starts with "aus unserer werbung" headings (html or plain text or other markup)
+            // literature or related episodes or other blocks after the description text start with Regex("// ?")
+            .takeWhile { !it.contains("aus unserer werbung", ignoreCase = true) && !it.startsWith("//") }
+            .map { line ->
+                line
+                    .filter { it == ' ' || !it.isWhitespace() }
+                    .replace("  ", " ")
+                    .trim()
+            }
+            .joinToString(" ")
+
         val episode = Episode(
             id = episodeNumber,
-            title = itemTitle,
+            title = title,
             // Wed, 29 May 2024 07:00:00 +0000
             date = ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toKotlinInstant(),
-            websiteUrl = URI("https://www.geschichte.fm/archiv/zs$formattedEpisodeNumber"),
+            websiteUrl = URI("https://gadg.fm/$episodeNumber"),
             audioUrl = URI(audioUrl),
             durationInSeconds = durationInSeconds,
-            episodeLinks = links,
+            episodeLinks = episodeLinks,
+            description = descriptionNormalized,
             transcript = "",
-            description = "...", // itemContentEncoded,
+            literature = emptyList(),
         )
         episodes.add(episode)
     }
@@ -117,7 +134,8 @@ data class Episode(
     val audioUrl: URI,
     val transcript: String,
     val description: String,
-    val episodeLinks: List<Int>
+    val episodeLinks: List<Int>,
+    val literature: List<String>,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
