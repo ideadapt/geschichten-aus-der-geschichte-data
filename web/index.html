@@ -17,15 +17,30 @@
     </style>
 </head>
 <body>
-<div id="graph"></div>
-<script type="module">
-    const gagDataText = window.location.hash.includes("inline") ?
-        document.getElementById("gag-data").innerText
-        : (await (await fetch("https://raw.githubusercontent.com/ideadapt/geschichten-aus-der-geschichte-links/refs/heads/main/data/episodes.jsonl")).text())
-    const gagData = JSON.parse("[" + gagDataText.trim().replaceAll("\n", ",") + "]")
+<div id="raw-data">
+    <div id="data-table">loading table</div>
+</div>
+<div id="graph">loading graph</div>
+<script type="text/javascript">
+    const gagData = new Promise(async (res, rej) => {
+        try {
+            const gagDataText = window.location.hash.includes("inline") ?
+                document.getElementById("gag-data").innerText
+                : (await (await fetch("https://raw.githubusercontent.com/ideadapt/geschichten-aus-der-geschichte-links/refs/heads/main/data/episodes.jsonl")).text())
+            const gagData = JSON.parse("[" + gagDataText.trim().replaceAll("\n", ",") + "]")
 
-    function render() {
-        const container = document.getElementById("graph")
+            res(gagData)
+        } catch (e) {
+            rej(e)
+        }
+    })
+
+    window.gagData = gagData
+</script>
+<script type="module">
+    import {html, render} from 'https://unpkg.com/htm/preact/standalone.module.js'
+
+    function renderGraph(gagData) {
 
         const edges = gagData.map((episode, eIdx) =>
             episode.episodeLinks.map((link, lIdx) => ({
@@ -50,17 +65,44 @@
         console.log(edges)
         console.log(nodes)
 
-        const orb = new Orb.Orb(container)
+        const $container = document.getElementById("graph")
+        $container.innerHTML = ''
+        const orb = new Orb.Orb($container)
         orb.data.setup({nodes, edges})
 
         orb.view.render(() => orb.view.recenter())
     }
 
-    if (document.readyState === 'complete') {
-        render()
-    } else {
-        document.addEventListener('DOMContentLoaded', () => render())
+    function renderDataTable(gagData) {
+        const $table = document.getElementById("data-table")
+        $table.innerHTML = ''
+        render(html`
+            <table style="max-height: 50vh;">
+                <thead>
+                <th>Name</th>
+                </thead>
+                <tbody>
+                <tr>${gagData.map(e =>
+                        html`
+                            <td><a href="${e.websiteUrl}" target="_blank">${e.title}</a></td>
+                        `
+                )}
+                </tr>
+                </tbody>
+            </table>`, $table)
     }
+
+    window.gagData.then(data => {
+        if (document.readyState === 'complete') {
+            renderDataTable(data)
+            renderGraph(data)
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                renderDataTable(data)
+                renderGraph(data)
+            })
+        }
+    }).catch(e => console.error('error loading gag data', e))
 </script>
 <!--@formatter:off-->
 <script type="application/json-lines" id="gag-data">
