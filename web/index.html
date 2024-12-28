@@ -26,7 +26,7 @@
         try {
             const gagDataText = window.location.hash.includes("inline") ?
                 document.getElementById("gag-data").innerText
-                : (await (await fetch("https://raw.githubusercontent.com/ideadapt/geschichten-aus-der-geschichte-links/refs/heads/main/data/episodes.jsonl")).text())
+                : (await (await fetch("https://raw.githubusercontent.com/ideadapt/geschichten-aus-der-geschichte-data/refs/heads/main/data/episodes.jsonl")).text())
             const gagData = JSON.parse("[" + gagDataText.trim().replaceAll("\n", ",") + "]")
 
             res(gagData)
