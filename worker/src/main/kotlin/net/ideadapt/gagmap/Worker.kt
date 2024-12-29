@@ -65,34 +65,9 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
         val durationInSeconds = itemElement.getSingleChildText("itunes:duration").toLong()
         val audioUrl = itemElement.getSingleChild("enclosure").attributes.getNamedItem("url").textContent
 
-        // link format changed from zs270 to gag271.
-        // gadg.fm/{id} redirects to correct URL for given, unformatted episodeId.
-        // gadg.fm/362
-        // geschichte.fm/podcast/zs104
-        // geschichte.fm/archiv/gag07
-        val episodeLinks = contentEncoded.takeIf { it.isNotEmpty() }?.let {
-            Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs|geschichte\\.fm/archiv/gag)(\\d\\d\\d?)").findAll(it)
-                .map { m ->
-                    m.groupValues[2].toInt()
-                }
-        }
-            .orEmpty()
-            .filter { it != episodeNumber }
-            .toList()
-
-        val descriptionNormalized = description
-            .lines()
-            .filter { it.isNotBlank() }
-            // ad block in description field starts with "aus unserer werbung" headings (html or plain text or other markup)
-            // literature or related episodes or other blocks after the description text start with Regex("// ?")
-            .takeWhile { !it.contains("aus unserer werbung", ignoreCase = true) && !it.startsWith("//") }
-            .map { line ->
-                line
-                    .filter { it == ' ' || !it.isWhitespace() }
-                    .replace("  ", " ")
-                    .trim()
-            }
-            .joinToString(" ")
+        val episodeLinks = extractEpisodeLinks(contentEncoded, episodeNumber)
+        val descriptionNormalized = normalizeDescription(description)
+        val temporalLinks = extractTemporalRefs(descriptionNormalized)
 
         val episode = Episode(
             id = episodeNumber,
@@ -106,10 +81,66 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
             description = descriptionNormalized,
             transcript = "",
             literature = emptyList(),
+            temporalLinks = temporalLinks,
         )
         episodes.add(episode)
     }
     return episodes
+}
+
+private fun extractEpisodeLinks(contentEncoded: String, episodeNumber: Int): List<Int> {
+    // link format changed from zs270 to gag271.
+    // gadg.fm/{id} redirects to correct URL for given, unformatted episodeId.
+    // gadg.fm/362
+    // geschichte.fm/podcast/zs104
+    // geschichte.fm/archiv/gag07
+    val urlFormats = Regex("(gadg\\.fm/|geschichte\\.fm/podcast/zs|geschichte\\.fm/archiv/gag)(\\d\\d\\d?)")
+    val episodeLinks = contentEncoded.takeIf { it.isNotEmpty() }?.let {
+        urlFormats.findAll(it)
+            .map { m ->
+                m.groupValues[2].toInt()
+            }
+    }
+        .orEmpty()
+        .filter { it != episodeNumber }
+        .toList()
+    return episodeLinks
+}
+
+private fun normalizeDescription(description: String) = description
+    .lines()
+    .filter { it.isNotBlank() }
+    // ad block in description field starts with "aus unserer werbung" headings (html or plain text or other markup)
+    // literature or related episodes or other blocks after the description text start with Regex("// ?")
+    .takeWhile { !it.contains("aus unserer werbung", ignoreCase = true) && !it.startsWith("//") }
+    .map { line ->
+        line
+            .filter { it == ' ' || !it.isWhitespace() }
+            .replace("  ", " ")
+            .trim()
+    }
+    .joinToString(" ")
+
+fun extractTemporalRefs(descriptionNormalized: String): List<String> {
+    // 14. September 2022
+    // September 2022 (vdZw)?
+    // 19. Jahrhundert (vdZw)?
+    // Jahr 2022 (vdZw)?
+    // 2000er Jahre (vdZw)?
+    val monthNames = "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
+    val temporalLinks =
+        listOf(
+            Regex("(\\d\\d?\\. )?($monthNames) \\d{1,4}( vdZw)?"),
+            Regex("\\d\\d?\\. Jahrhundert( vdZw)?"),
+            Regex("Jahr \\d{1,4}( vdZw)?"),
+            Regex("\\d{1,4}er Jahre( vdZw)?"),
+        ).flatMap { regex ->
+            regex
+                .findAll(descriptionNormalized)
+                .map { it.value }
+        }
+
+    return temporalLinks
 }
 
 fun Element.getSingleChildText(tagName: String): String = this.getSingleChild(tagName).textContent
@@ -135,6 +166,7 @@ data class Episode(
     val transcript: String,
     val description: String,
     val episodeLinks: List<Int>,
+    val temporalLinks: List<String>,
     val literature: List<String>,
 )
 

@@ -1,6 +1,6 @@
 # Geschichten aus der Geschichte - Datenhub
 
-Strukturierte Sammlung von Metadaten zu allen Episoden des Podcasts "Geschichten aus der Geschichte" (aka
+Strukturierte Sammlung von Metadaten zu allen regulären Episoden des Podcasts "Geschichten aus der Geschichte" (aka
 GAG), https://www.geschichte.fm.
 
 Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
@@ -11,11 +11,12 @@ Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
 
 * Titel
 * erwähnte Episoden
+* erwähnte Zeitreferenzen (Jahrhunderte, exakte Daten)
 * Beschreibung
 * Dauer
 * Link zur Audio-Datei
 * Erscheinungsdatum
-* Link zu Webseite
+* Link zur Webseite
 
 Die Metadaten werden [automatisch](./.github/workflows/update-data.yaml) jede Woche aktualisiert und sind hier in diesem
 Repository [abgelegt im JSONL Format](./data/episodes.jsonl).
@@ -37,7 +38,8 @@ https://github.com/Dr-Lego/gag-network
 ### Design
 
 Das Projekt verwendet als Datengrundlage Wikipedia dumps. Diese sind sehr gross. Es besteht das Risiko, dass die
-Wikipedia Seite nicht aktuell / vollständig ist.
+Wikipedia Seite nicht aktuell / vollständig ist. Das verwendete Datenformat ist SQLite, welches nicht menschenlesbar
+ist.
 
 ## gag-timeline
 
