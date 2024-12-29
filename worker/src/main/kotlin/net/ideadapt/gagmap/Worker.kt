@@ -96,7 +96,7 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
 
         val episode = Episode(
             id = episodeNumber,
-            title = title,
+            title = title.replace(Regex("GAG\\d\\d\\d?: "), ""),
             // Wed, 29 May 2024 07:00:00 +0000
             date = ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toKotlinInstant(),
             websiteUrl = URI("https://gadg.fm/$episodeNumber"),
