@@ -1,6 +1,7 @@
 # Geschichten aus der Geschichte - Datenhub
 
-Strukturierte Sammlung von Metadaten zu allen regulären Episoden des Podcasts "Geschichten aus der Geschichte" (aka
+Strukturierte Sammlung von Metadaten zu allen regulären Episoden (keine Feedback- oder Extra- / Bonus-Episoden) des
+Podcasts "Geschichten aus der Geschichte" (aka
 GAG), https://www.geschichte.fm.
 
 Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
