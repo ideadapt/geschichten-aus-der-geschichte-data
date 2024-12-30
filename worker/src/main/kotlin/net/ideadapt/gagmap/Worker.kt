@@ -103,6 +103,7 @@ private fun extractEpisodeLinks(contentEncoded: String, episodeNumber: Int): Lis
     }
         .orEmpty()
         .filter { it != episodeNumber }
+        .toSortedSet()
         .toList()
     return episodeLinks
 }

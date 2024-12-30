@@ -63,3 +63,8 @@ sowie Personen und Orte aus dem Transkript und der Beschreibung extrahiert.
 API-Zugang auf Anfrage. Kosten unbekannt.
 
 https://podcasts.musixmatch.com/podcast/geschichten-aus-der-geschichte-01h1nzad7068wrm8ac14dqgmm1
+
+## Disclaimer
+
+Sämtliche Inhalte wurden nach bestem Wissen und Gewissen sorgfältig erstellt. Es besteht jedoch keine Garantie auf
+Vollständigkeit, Richtigkeit, Rückschlüsse und Schlussfolgerungen infolge Darstellung der Homepage und deren Inhalte.
