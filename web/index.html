@@ -8,12 +8,21 @@
         body, html {
             margin: 1rem;
             padding: 0;
+            font-family: Roboto, sans-serif;
+        }
+
+        tr td:first-child {
+            border-left: 5px solid transparent;
+        }
+
+        tr:target td:first-child {
+            border-left: 5px solid #D19000;
         }
 
         #graph {
             width: 100%;
             height: 100vw;
-            border: 1px solid black;
+            border: 1px solid #ddd;
         }
 
         .col-episode-links a {
@@ -28,6 +37,14 @@
         .col-temporal-links span {
             display: inline-block;
             margin-right: 4px;
+        }
+
+        .col-temporal-links span:not(:last-of-type)::after {
+            content: ","
+        }
+
+        .col-date {
+            text-align: right;
         }
     </style>
 </head>
@@ -136,12 +153,17 @@
     {"id":1,"title":"Vier Langobarden-Könige und ein Trinkbecher","date":"2015-10-01T09:07:13Z","durationInSeconds":1088,"websiteUrl":"https://gadg.fm/1","audioUrl":"https://audio.podigee-cdn.net/543025-m-906f9db7eade9a55352360bfb6b3ab7e.mp3?source=feed","transcript":"","description":"Frühes Mittelalter in Italien: Times are rough, alle wollen ein Stück vom Kuchen des ehemaligen weströmischen Reichs abhaben. Einer von ihnen ist Alboin, Langobardenkönig. Und wie so oft, war auch ihm kein Greisenalter vergönnt. Warum, das erzählen wir euch in unserer allerersten Geschichte.","episodeLinks":[2],"temporalLinks":[],"literature":[]}
 </script>
 <!--@formatter:on-->
-<p>Diese Seite zeigt Metadaten der regulären Episoden des Podcasts "Geschichten aus der Geschichte", siehe <a
+<p>Diese Seite zeigt Metadaten der regulären Episoden (keine Feedback- oder Extra- / Bonus-Episoden) des Podcasts
+    "Geschichten aus der Geschichte", siehe <a
         href="https://geschichte.fm">geschichte.fm</a>.</p>
 <div id="raw-data">
     <div id="data-table">loading table</div>
 </div>
+<h2>Episodenverweise &dash; Netzwerk-Graph</h2>
+<p>Doppelklick auf Kreis / Knotenpunkt um zur Episode zu springen. Scrollen um zu zoomen. Klick + Ziehen um zu
+    verschieben.</p>
 <div id="graph">loading graph</div>
+<hr>
 <footer>
     <p>
         Sämtliche Inhalte wurden nach bestem Wissen und Gewissen sorgfältig erstellt. Es besteht jedoch keine Garantie
@@ -150,7 +172,7 @@
     </p>
     <p>Code und weitere Dokumentation auf <a href="https://github.com/ideadapt/geschichten-aus-der-geschichte-data">github.com/ideadapt/geschichten-aus-der-geschichte-data</a>
 </footer>
-</p>
+
 <script type="text/javascript">
     const gagData = new Promise(async (res, rej) => {
         try {
@@ -198,6 +220,26 @@
         const $container = document.getElementById("graph")
         $container.innerHTML = ''
         const orb = new Orb.Orb($container)
+        orb.data.setDefaultStyle({
+            getNodeStyle(node) {
+                return {
+                    color: '#D19000',
+                    size: 5,
+                    label: node.data.label,
+                    fontSize: 5
+                };
+            },
+            getEdgeStyle() {
+                return {
+                    color: '#ddd',
+                    width: 1,
+                };
+            },
+        });
+        orb.events.on('node-double-click', event => {
+            //document.getElementById(event.node.id).scrollIntoView()
+            window.location.hash = event.node.id
+        });
         orb.data.setup({nodes, edges})
 
         orb.view.render(() => orb.view.recenter())
@@ -210,7 +252,7 @@
         const gagDataById = groupBy(gagData, episode => episode.id)
         $table.innerHTML = ''
         render(html`
-            <table style="max-height: 50vh;">
+            <table style="max-height: 50vh;" cellpadding="2">
                 <thead>
                 <th>Nr</th>
                 <th>Titel</th>
@@ -221,10 +263,17 @@
                 </thead>
                 <tbody>${gagData.map(e =>
                         html`
-                            <tr>
+                            <tr id="${e.id}">
                                 <td><a href="${e.websiteUrl}" target="_blank">${e.id}</a></td>
                                 <td>${e.title}</td>
-                                <td>${e.date}</td>
+                                <td class="col-date">${new Date(e.date).toLocaleString("de", {
+                                    month: "short",
+                                    year: "numeric",
+                                    day: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit"
+                                })}
+                                </td>
                                 <td class="col-episode-links">${e.episodeLinks
                                         .map(episodeId => (gagDataById[episodeId] || {0: {}})[0])
                                         .map(episode => (episode.websiteUrl && html`
