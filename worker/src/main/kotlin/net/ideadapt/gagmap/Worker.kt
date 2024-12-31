@@ -1,5 +1,6 @@
 package net.ideadapt.gagmap
 
+import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -17,8 +18,13 @@ import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.*
 import javax.xml.parsers.DocumentBuilderFactory
 
 
@@ -122,7 +128,7 @@ private fun normalizeDescription(description: String) = description
     }
     .joinToString(" ")
 
-fun extractTemporalRefs(descriptionNormalized: String): List<String> {
+fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
     // 14. September 2022
     // September 2022 (vdZw)?
     // 19. Jahrhundert (vdZw)?
@@ -131,17 +137,99 @@ fun extractTemporalRefs(descriptionNormalized: String): List<String> {
     val monthNames = "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
     val temporalLinks =
         listOf(
-            Regex("(\\d\\d?\\. )?($monthNames) \\d{1,4}( vdZw)?"),
-            Regex("\\d\\d?\\. Jahrhundert( vdZw)?"),
-            Regex("Jahr \\d{1,4}( vdZw)?"),
-            Regex("\\d{1,4}er Jahre( vdZw)?"),
-        ).flatMap { regex ->
+            Regex("(\\d\\d?\\. )?($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.DayOrMonth,
+            Regex("\\d\\d?\\. Jahrhundert( vdZw)?") to TemporalRef.Companion.Mode.Jh,
+            Regex("Jahr \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.J,
+            Regex("\\d{1,4}er Jahre( vdZw)?") to TemporalRef.Companion.Mode.Jz,
+        ).flatMap { (regex, mode) ->
             regex
                 .findAll(descriptionNormalized)
-                .map { it.value }
+                .map { match ->
+                    match.value
+                        .replace("Jahr ", "")
+                        .replace("Jahrhundert", "Jh.")
+                        .replace(Regex("^\\d\\der Jahre$"), "19$0")
+                }.map { TemporalRef(it, mode, it.endsWith("vdZw", ignoreCase = true)) }
         }
 
     return temporalLinks
+}
+
+@Serializable
+data class TemporalRef(val literal: String, val start: Instant, val end: Instant) {
+
+    constructor(literal: String, mode: Mode, vdzw: Boolean) : this(
+        literal = literal,
+        start = getStart(literal, mode, vdzw),
+        end = getEnd(literal, mode, vdzw),
+    )
+
+    companion object {
+
+        private fun parseGermanDate(dateString: String): LocalDate {
+            val formatter = DateTimeFormatter.ofPattern("d. MMMM u", Locale.GERMAN)
+            return LocalDate.parse(dateString, formatter)
+        }
+
+        fun getStart(literal: String, mode: Mode, vdzw: Boolean): Instant =
+            when (mode) {
+                Mode.DayOrMonth -> {
+                    if (literal.first().isDigit()) {
+                        parseGermanDate(literal).atStartOfDay().toInstant(ZoneOffset.UTC)
+                            .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                    } else {
+                        parseGermanDate("1. $literal").atStartOfDay().toInstant(ZoneOffset.UTC)
+                            .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                    }
+                }
+
+                Mode.Jh -> {
+                    val century = literal.substringBefore(". Jh").toInt() * 100
+                    if (vdzw) {
+                        parseGermanDate("1. Januar -$century")
+                    } else {
+                        parseGermanDate("1. Januar ${century - 99}")
+                    }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                }
+
+                else -> {
+                    Instant.fromEpochMilliseconds(0) // TODO replace with exception once all modes implemented
+                }
+            }
+
+        fun getEnd(literal: String, mode: Mode, vdzw: Boolean): Instant =
+            when (mode) {
+                Mode.DayOrMonth -> {
+                    if (literal.first().isDigit()) {
+                        parseGermanDate(literal).atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC)
+                            .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                    } else {
+                        parseGermanDate("1. $literal").atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC)
+                            .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                    }
+                }
+
+                Mode.Jh -> {
+                    val century = literal.substringBefore(". Jh").toInt() * 100
+                    if (vdzw) {
+                        parseGermanDate("31. Dezember ${-century + 99}")
+                    } else {
+                        parseGermanDate("31. Dezember $century")
+                    }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                }
+
+                else -> {
+                    Instant.fromEpochMilliseconds(0) // TODO replace with exception once all modes implemented
+                }
+            }
+
+
+        enum class Mode {
+            DayOrMonth, J, Jz, Jh
+        }
+
+    }
+
 }
 
 fun Element.getSingleChildText(tagName: String): String = this.getSingleChild(tagName).textContent
@@ -158,7 +246,7 @@ fun Element.getSingleChild(tagName: String): Node {
 data class Episode(
     val id: Int,
     val title: String,
-    val date: kotlinx.datetime.Instant,
+    val date: Instant,
     val durationInSeconds: Long,
     @Serializable(with = URISerializer::class)
     val websiteUrl: URI,
@@ -167,7 +255,7 @@ data class Episode(
     val transcript: String,
     val description: String,
     val episodeLinks: List<Int>,
-    val temporalLinks: List<String>,
+    val temporalLinks: List<TemporalRef>,
     val literature: List<String>,
 )
 
