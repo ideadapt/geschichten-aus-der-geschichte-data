@@ -15,14 +15,32 @@
             border-left: 5px solid transparent;
         }
 
-        tr:target td:first-child {
-            border-left: 5px solid #D19000;
-        }
-
         #graph {
             width: 100%;
             height: 100vw;
             border: 1px solid #ddd;
+        }
+
+        .col-id {
+            position: relative;
+        }
+
+        .episode-anchor {
+            position: absolute;
+            display: block;
+            width: 1px;
+            top: -20px;
+        }
+
+        .anchor-marker {
+            width: 0;
+            height: 3ex;
+            position: absolute;
+            left: -3px;
+        }
+
+        .episode-anchor:target + .anchor-marker {
+            border-left: 3px solid #D19000;
         }
 
         .col-episode-links a {
@@ -263,8 +281,12 @@
                 </thead>
                 <tbody>${gagData.map(e =>
                         html`
-                            <tr id="${e.id}">
-                                <td><a href="${e.websiteUrl}" target="_blank">${e.id}</a></td>
+                            <tr>
+                                <td class="col-id">
+                                    <a href="" id="${e.id}" class="episode-anchor"></a>
+                                    <div class="anchor-marker"></div>
+                                    <a href="${e.websiteUrl}" target="_blank">${e.id}</a>
+                                </td>
                                 <td>${e.title}</td>
                                 <td class="col-date">${new Date(e.date).toLocaleString("de", {
                                     month: "short",
@@ -277,8 +299,7 @@
                                 <td class="col-episode-links">${e.episodeLinks
                                         .map(episodeId => (gagDataById[episodeId] || {0: {}})[0])
                                         .map(episode => (episode.websiteUrl && html`
-                                            <a title="${episode.title}" href="${episode.websiteUrl}"
-                                               target="_blank">${episode.title}</a>
+                                            <a title="${episode.title}" href="#${episode.id}">${episode.title}</a>
                                         `) || "")}
                                 </td>
                                 <td class="col-temporal-links">${e.temporalLinks
