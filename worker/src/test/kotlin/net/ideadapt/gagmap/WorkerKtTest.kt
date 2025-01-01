@@ -19,7 +19,10 @@ class WorkerKtTest {
         lorem Jahr 2022 vdZw ipsum
         lorem Jahr 2022 ipsum
         lorem 2000er Jahre ipsum
-        lorem 80er Jahre ipsum
+        lorem 80er Jahre ipsum -- wird als 1980 behandelt
+        lorem 80er Jahre vdZw ipsum -- wird als -89 - -80 behandelt
+        lorem 0er Jahre ipsum
+        lorem 0er Jahre vdZw ipsum
    """
         )
 
@@ -40,8 +43,25 @@ class WorkerKtTest {
         assertEquals(Instant.parse("0001-01-01T00:00:00Z"), refs[5].start)
         assertEquals(Instant.parse("0100-12-31T23:59:59Z"), refs[5].end)
         assertEquals("2022 vdZw", refs[6].literal)
+            assertEquals(Instant.parse("-2022-01-01T00:00:00Z"), refs[6].start)
+            assertEquals(Instant.parse("-2022-12-31T23:59:59Z"), refs[6].end)
         assertEquals("2022", refs[7].literal)
+            assertEquals(Instant.parse("2022-01-01T00:00:00Z"), refs[7].start)
+            assertEquals(Instant.parse("2022-12-31T23:59:59Z"), refs[7].end)
         assertEquals("2000er Jahre", refs[8].literal)
+            assertEquals(Instant.parse("2000-01-01T00:00:00Z"), refs[8].start)
+            assertEquals(Instant.parse("2009-12-31T23:59:59Z"), refs[8].end)
         assertEquals("1980er Jahre", refs[9].literal)
+            assertEquals(Instant.parse("1980-01-01T00:00:00Z"), refs[9].start)
+            assertEquals(Instant.parse("1989-12-31T23:59:59Z"), refs[9].end)
+            assertEquals("80er Jahre vdZw", refs[10].literal)
+            assertEquals(Instant.parse("-0089-01-01T00:00:00Z"), refs[10].start)
+            assertEquals(Instant.parse("-0080-12-31T23:59:59Z"), refs[10].end)
+            assertEquals("0er Jahre", refs[11].literal)
+            assertEquals(Instant.parse("0001-01-01T00:00:00Z"), refs[11].start)
+            assertEquals(Instant.parse("0009-12-31T23:59:59Z"), refs[11].end)
+            assertEquals("0er Jahre vdZw", refs[12].literal)
+            assertEquals(Instant.parse("-0009-01-01T00:00:00Z"), refs[12].start)
+            assertEquals(Instant.parse("-0001-12-31T23:59:59Z"), refs[12].end)
     }
 }

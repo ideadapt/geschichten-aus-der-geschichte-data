@@ -192,8 +192,23 @@ data class TemporalRef(val literal: String, val start: Instant, val end: Instant
                     }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
 
-                else -> {
-                    Instant.fromEpochMilliseconds(0) // TODO replace with exception once all modes implemented
+                Mode.J -> {
+                    val year = literal.lowercase().substringBefore(" vdzw").toInt()
+                    if (vdzw) {
+                        parseGermanDate("1. Januar ${-year}")
+                    } else {
+                        parseGermanDate("1. Januar $year")
+                    }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                }
+
+                Mode.Jz -> {
+                    val decade = literal.substringBefore("er Jahre").toInt()
+                    if (vdzw) {
+                        parseGermanDate("1. Januar ${-decade - 9}")
+                    } else {
+                        val fixedDecade = if (decade == 0) 1 else decade
+                        parseGermanDate("1. Januar $fixedDecade")
+                    }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
             }
 
@@ -218,8 +233,23 @@ data class TemporalRef(val literal: String, val start: Instant, val end: Instant
                     }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
 
-                else -> {
-                    Instant.fromEpochMilliseconds(0) // TODO replace with exception once all modes implemented
+                Mode.J -> {
+                    val year = literal.lowercase().substringBefore(" vdzw").toInt()
+                    if (vdzw) {
+                        parseGermanDate("31. Dezember ${-year}")
+                    } else {
+                        parseGermanDate("31. Dezember $year")
+                    }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                }
+
+                Mode.Jz -> {
+                    val decade = literal.substringBefore("er Jahre").toInt()
+                    if (vdzw) {
+                        val fixedDecade = if (decade == 0) 1 else decade
+                        parseGermanDate("31. Dezember ${-fixedDecade}")
+                    } else {
+                        parseGermanDate("31. Dezember ${decade + 9}")
+                    }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
             }
 
@@ -227,9 +257,7 @@ data class TemporalRef(val literal: String, val start: Instant, val end: Instant
         enum class Mode {
             DayOrMonth, J, Jz, Jh
         }
-
     }
-
 }
 
 fun Element.getSingleChildText(tagName: String): String = this.getSingleChild(tagName).textContent
