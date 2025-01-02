@@ -39,7 +39,7 @@ class WorkerKtTest {
         val refs = extractTemporalRefs(
             """
         lorem 19. Jahrhundert vdZw ipsum
-        lorem 19. Jahrhundert ipsum
+        lorem 19. Jahrhunderts ipsum
         lorem 1. Jahrhundert ipsum
    """
         )
@@ -47,7 +47,7 @@ class WorkerKtTest {
         assertEquals("19. Jahrhundert vdZw", refs[0].literal)
         assertEquals(Instant.parse("-1900-01-01T00:00:00Z"), refs[0].start)
         assertEquals(Instant.parse("-1801-12-31T23:59:59Z"), refs[0].end)
-        assertEquals("19. Jahrhundert", refs[1].literal)
+        assertEquals("19. Jahrhunderts", refs[1].literal)
         assertEquals(Instant.parse("1801-01-01T00:00:00Z"), refs[1].start)
         assertEquals(Instant.parse("1900-12-31T23:59:59Z"), refs[1].end)
         assertEquals("1. Jahrhundert", refs[2].literal)
@@ -99,5 +99,26 @@ class WorkerKtTest {
         assertEquals("0er Jahre vdZw", refs[4].literal)
         assertEquals(Instant.parse("-0009-01-01T00:00:00Z"), refs[4].start)
         assertEquals(Instant.parse("-0001-12-31T23:59:59Z"), refs[4].end)
+    }
+
+    @Test
+    fun `extractTemporalRefs Jahrzehnt bzw Dekade relative`() {
+        val refs = extractTemporalRefs(
+            """
+        lorem 60er Jahren des 19. Jahrhundert ipsum
+        lorem 20er Jahren des 16. Jahrhunderts vdZw ipsum
+        lorem 80er Jahre des 19. JH ipsum
+   """
+        )
+
+        assertEquals("60er Jahren des 19. Jahrhundert", refs[0].literal)
+        assertEquals(Instant.parse("1860-01-01T00:00:00Z"), refs[0].start)
+        assertEquals(Instant.parse("1869-12-31T23:59:59Z"), refs[0].end)
+        assertEquals("20er Jahren des 16. Jahrhunderts vdZw", refs[1].literal)
+        assertEquals(Instant.parse("-1529-01-01T00:00:00Z"), refs[1].start)
+        assertEquals(Instant.parse("-1520-12-31T23:59:59Z"), refs[1].end)
+        assertEquals("80er Jahre des 19. JH", refs[2].literal)
+        assertEquals(Instant.parse("1880-01-01T00:00:00Z"), refs[2].start)
+        assertEquals(Instant.parse("1889-12-31T23:59:59Z"), refs[2].end)
     }
 }

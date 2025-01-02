@@ -129,27 +129,43 @@ private fun normalizeDescription(description: String) = description
     .joinToString(" ")
 
 fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
+    // Examples:
     // 14. September 2022
-    // September 2022 (vdZw)?
-    // 19. Jahrhundert (vdZw)?
-    // Jahr 2022 (vdZw)?
-    // 2000er Jahre (vdZw)?
+    // September 2022
+    // 19. Jahrhunderts?
+    // Jahr 2022
+    // 2000er Jahren?
+    // 30er Jahren? des 20. (JH|Jahrhunderts?)
     val monthNames = "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
-    val temporalLinks =
-        listOf(
-            Regex("(\\d\\d?\\. )?($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.DayOrMonth,
-            Regex("\\d\\d?\\. Jahrhundert( vdZw)?") to TemporalRef.Companion.Mode.Jh,
-            Regex("Jahr \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.J,
-            Regex("\\d{1,4}er Jahre( vdZw)?") to TemporalRef.Companion.Mode.Jz,
-        ).flatMap { (regex, mode) ->
-            regex
-                .findAll(descriptionNormalized)
-                .map { match ->
-                    TemporalRef(match.value, mode, match.value.endsWith("vdZw", ignoreCase = true))
-                }
-        }
 
-    return temporalLinks
+    var startIdx = 0
+    var done = false
+    // TODO make while more nice
+    val regexes = listOf(
+        Regex("\\d\\d?\\. ($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Day,
+        Regex("($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Month,
+        Regex("\\d{1,4}er Jahren? des \\d\\d?\\. (JH|Jahrhunderts?)( vdZw)?") to TemporalRef.Companion.Mode.JzRelative,
+        Regex("\\d\\d?\\. Jahrhunderts?( vdZw)?") to TemporalRef.Companion.Mode.Jh,
+        Regex("Jahr \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.J,
+        Regex("\\d{1,4}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzAbsolute,
+        // Regex("\\d{1,2}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzImplicit, // only 4 cases so far
+    )
+    val links = mutableListOf<TemporalRef>()
+    while (!done) {
+        var noMatch = true
+        for (regex in regexes) {
+            val match = regex.first.find(descriptionNormalized, startIdx)
+            if (match != null) {
+                noMatch = false
+                startIdx = match.range.endInclusive
+                links.add(TemporalRef(match.value, regex.second, match.value.endsWith("vdZw", ignoreCase = true)))
+                break
+            }
+        }
+        done = noMatch
+    }
+
+    return links
 }
 
 @Serializable
@@ -159,8 +175,9 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
         literal = literal,
         displayText = literal
             .replace("Jahr ", "")
-            .replace("Jahrhundert", "Jh."),
-        //.replace(Regex("^\\d\\der Jahre$"), "19$0"),
+            .replace("Jahrhunderts", "Jh.")
+            .replace("Jahrhundert", "Jh.")
+            .replace(" JH", " Jh."),
         start = getStart(literal, mode, vdzw),
         end = getEnd(literal, mode, vdzw),
     )
@@ -174,14 +191,14 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
 
         fun getStart(literal: String, mode: Mode, vdzw: Boolean): Instant =
             when (mode) {
-                Mode.DayOrMonth -> {
-                    if (literal.first().isDigit()) {
+                Mode.Day -> {
                         parseGermanDate(literal).atStartOfDay().toInstant(ZoneOffset.UTC)
                             .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
-                    } else {
+                }
+
+                Mode.Month -> {
                         parseGermanDate("1. $literal").atStartOfDay().toInstant(ZoneOffset.UTC)
                             .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
-                    }
                 }
 
                 Mode.Jh -> {
@@ -202,13 +219,14 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
                     }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
 
-                Mode.Jz -> {
+                Mode.JzAbsolute -> {
                     val decade = literal.substringBefore("er Jahre").toInt()
                     if (vdzw) {
                         parseGermanDate("1. Januar ${-decade - 9}")
                     } else {
                         val fixedDecade = if (decade == 0) 1 else {
                             if (decade in 10..99) {
+                                // JzImplicit logic ...
                                 // heuristics to normalize e.g. "20er jahre" to "1920er jahre"
                                 // which might be overengineered (since up until now, gag descriptions don't contain such references, but always use "1980er Jahre")
                                 // and it may even lead to wrong dates at some later point in time, when we refer to 2010-2019 as "10er Jahre" ...
@@ -220,18 +238,29 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
                         parseGermanDate("1. Januar $fixedDecade")
                     }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
+
+                Mode.JzRelative -> {
+                    val century = literal.substringBefore(". Jahrhundert", missingDelimiterValue = "")
+                        .ifEmpty { literal.substringBefore(". JH") }.substringAfter(" des ").toInt() * 100
+                    val decade = literal.substringBefore("er Jahre").toInt()
+                    if (vdzw) {
+                        parseGermanDate("1. Januar ${-(decade + 9 + century - 100)}")
+                    } else {
+                        parseGermanDate("1. Januar ${decade + century - 100}")
+                    }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                }
             }
 
         fun getEnd(literal: String, mode: Mode, vdzw: Boolean): Instant =
             when (mode) {
-                Mode.DayOrMonth -> {
-                    if (literal.first().isDigit()) {
+                Mode.Day -> {
                         parseGermanDate(literal).atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC)
                             .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
-                    } else {
+                }
+
+                Mode.Month -> {
                         parseGermanDate("1. $literal").atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC)
                             .truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
-                    }
                 }
 
                 Mode.Jh -> {
@@ -252,25 +281,32 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
                     }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
 
-                Mode.Jz -> {
+                Mode.JzAbsolute -> {
                     val decade = literal.substringBefore("er Jahre").toInt()
                     if (vdzw) {
                         val fixedDecade = if (decade == 0) 1 else decade
                         parseGermanDate("31. Dezember ${-fixedDecade}")
                     } else {
-                        val fixedDecade = if (decade in 10..99) {
-                            decade + 1900
-                        } else {
-                            decade
-                        }
-                        parseGermanDate("31. Dezember ${fixedDecade + 9}")
+                        parseGermanDate("31. Dezember ${decade + 9}")
+                    }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
+                }
+
+                Mode.JzRelative -> {
+                    val century = literal.substringBefore(". Jahrhundert", missingDelimiterValue = "")
+                        .ifEmpty { literal.substringBefore(". JH") }.substringAfter(" des ").toInt() * 100
+                    val decade = literal.substringBefore("er Jahre").toInt()
+                    if (vdzw) {
+                        val fixedDecade = if (decade == 0) 1 else decade
+                        parseGermanDate("31. Dezember ${-(century - 100 + fixedDecade)}")
+                    } else {
+                        parseGermanDate("31. Dezember ${century - 100 + decade + 9}")
                     }.atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
             }
 
 
         enum class Mode {
-            DayOrMonth, J, Jz, Jh
+            Day, Month, J, JzAbsolute, JzRelative, Jh
         }
     }
 }
