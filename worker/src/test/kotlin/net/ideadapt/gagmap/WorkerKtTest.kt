@@ -100,4 +100,19 @@ class WorkerKtTest {
         assertEquals(Instant.parse("-0009-01-01T00:00:00Z"), refs[4].start)
         assertEquals(Instant.parse("-0001-12-31T23:59:59Z"), refs[4].end)
     }
+
+    @Test
+    fun `extractTemporalRefs Jahrzehnt bzw Dekade relative`() {
+        val refs = extractTemporalRefs(
+            """
+        lorem 60er Jahren des 19. Jahrhundert ipsum
+        lorem 70er Jahren des 19. Jahrhundert vdZw ipsum
+        lorem 80er Jahre des 19. JH vdZw ipsum
+   """
+        )
+
+        assertEquals("60er Jahren des 19. Jahrhundert", refs[0].literal)
+        assertEquals(Instant.parse("1960-01-01T00:00:00Z"), refs[0].start)
+        assertEquals(Instant.parse("1069-12-31T23:59:59Z"), refs[0].end)
+    }
 }
