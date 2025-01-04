@@ -30,8 +30,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 fun main() {
     val feedStream: InputStream = URI("https://www.geschichte.fm/feed/mp3").toURL().openStream()
-    Files.copy(feedStream, Paths.get("./data/feed.xml"), StandardCopyOption.REPLACE_EXISTING)
-    val feedXmlFile = File("./data/feed.xml")
+    Files.copy(feedStream, Paths.get("data/feed.xml"), StandardCopyOption.REPLACE_EXISTING)
+    val feedXmlFile = File("data/feed.xml")
     val document = parseXmlFile(feedXmlFile)
     val episodes = parseRssFeed(document)
     val db = File("data/episodes.jsonl")
@@ -166,7 +166,7 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
         done = noMatch
     }
 
-    return links
+    return links.toSet().toList()
 }
 
 @Serializable
