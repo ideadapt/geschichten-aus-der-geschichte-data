@@ -140,7 +140,7 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
 
     var startIdx = 0
     var done = false
-    // TODO make while more nice
+    // TODO make while and TemporalRef parsing more nice
     val regexes = listOf(
         Regex("\\d\\d?\\. ($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Day,
         Regex("($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Month,
@@ -176,6 +176,7 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
         literal = literal,
         displayText = literal
             .replace("Jahr ", "")
+            .replace("er Jahren", "er Jahre")
             .replace("Jahrhunderts", "Jh.")
             .replace("Jahrhundert", "Jh.")
             .replace(" JH", " Jh."),
