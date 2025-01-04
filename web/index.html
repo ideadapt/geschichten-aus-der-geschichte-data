@@ -311,13 +311,21 @@
         const items = new vis.DataSet(
             gagData
                 .filter(e => e.temporalLinks.length > 0)
-                .map(e => ({
-                    id: e.id,
-                    content: e.title,
-                    start: e.temporalLinks[0].start,
-                    end: e.temporalLinks[0].end,
-                    type: 'point'
-                })))
+                .map(e => {
+                    const start = e.temporalLinks[0].start
+                    const end = e.temporalLinks[0].end
+                    // see https://github.com/visjs/vis-timeline/issues/1505
+                    // resp. https://tc39.es/ecma262/#sec-expanded-years
+                    const jsStart = start.startsWith("-") ? start.replace("-", "-00") : start
+                    const jsEnd = start.startsWith("-") ? start.replace("-", "-00") : end
+                    return ({
+                        id: e.id,
+                        content: e.title,
+                        start: jsStart,
+                        end: jsEnd,
+                        type: 'point'
+                    });
+                }))
 
         const options = {
             verticalScroll: true,
