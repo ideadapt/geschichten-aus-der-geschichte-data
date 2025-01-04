@@ -129,6 +129,8 @@ private fun normalizeDescription(description: String) = description
     .joinToString(" ")
 
 fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
+    val links = mutableListOf<TemporalRef>()
+
     // Examples:
     // 14. September 2022
     // September 2022
@@ -137,34 +139,25 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
     // 2000er Jahren?
     // 30er Jahren? des 20. (JH|Jahrhunderts?)
     val monthNames = "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
-
-    var startIdx = 0
-    var done = false
-    // TODO make while and TemporalRef parsing more nice
-    val regexes = listOf(
+    val regexToModes = listOf(
         Regex("\\d\\d?\\. ($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Day,
         Regex("($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Month,
         Regex("\\d{1,4}er Jahren? des \\d\\d?\\. (JH|Jahrhunderts?)( vdZw)?") to TemporalRef.Companion.Mode.JzRelative,
+        Regex("\\d{1,4}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzAbsolute,
         Regex("\\d\\d?\\. Jahrhunderts?( vdZw)?") to TemporalRef.Companion.Mode.Jh,
         Regex("Jahr \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.J,
-        Regex("\\d{1,4}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzAbsolute,
         // only 2 cases so far (episodes 118 and 158), both of them contain other date refs in their description.
         // Regex("\\d{1,2}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzImplicit,
     )
-    val links = mutableListOf<TemporalRef>()
-    while (!done) {
-        var noMatch = true
-        for (regex in regexes) {
-            val match = regex.first.find(descriptionNormalized, startIdx)
-            if (match != null) {
-                noMatch = false
-                startIdx = match.range.endInclusive
-                links.add(TemporalRef(match.value, regex.second, match.value.endsWith("vdZw", ignoreCase = true)))
-                break
-            }
-        }
-        done = noMatch
-    }
+    var processedIdx = 0
+    @Suppress("ControlFlowWithEmptyBody")
+    while (regexToModes.any { regexToMode ->
+            regexToMode.first.find(descriptionNormalized, processedIdx)?.let { match ->
+                processedIdx = match.range.endInclusive
+                links.add(TemporalRef(match.value, regexToMode.second, match.value.endsWith("vdZw", ignoreCase = true)))
+                true
+            } == true
+        });
 
     return links.toSet().toList()
 }
@@ -172,6 +165,7 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
 @Serializable
 data class TemporalRef(val literal: String, val displayText: String, val start: Instant, val end: Instant) {
 
+    // TODO make TemporalRef parsing more nice
     constructor(literal: String, mode: Mode, vdzw: Boolean) : this(
         literal = literal,
         displayText = literal

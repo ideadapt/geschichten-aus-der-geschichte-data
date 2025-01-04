@@ -20,13 +20,13 @@ Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
 * Link zur Webseite
 
 Die Metadaten werden [automatisch](./.github/workflows/update-data.yaml) jede Woche aktualisiert und sind hier in diesem
-Repository [abgelegt im JSONL Format](./data/episodes.jsonl).
+Repository [abgelegt im JSONL Format](./data/episodes.jsonl) (menschen- und maschinenlesbar).
 
 ## Visualisierung
 
 Auf der
 Webseite [ideadapt.github.io/geschichten-aus-der-geschichte-data](https://ideadapt.github.io/geschichten-aus-der-geschichte-data)
-werden die Daten einfach zugänglich gemacht (Graphen, Diagramme, Tabellen).
+werden gewisse Metadaten einfach zugänglich gemacht (Graphen, Diagramme, Tabellen).
 
 # Verwandte Projekte
 
