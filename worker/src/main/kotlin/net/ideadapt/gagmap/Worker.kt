@@ -85,8 +85,8 @@ fun parseRssFeed(document: Document): MutableList<Episode> {
             durationInSeconds = durationInSeconds,
             episodeLinks = episodeLinks,
             description = descriptionNormalized,
-            transcript = "",
-            literature = emptyList(),
+            transcript = "", // TODO scrape from musixmatch
+            literature = emptyList(), // TODO extract from feed.xml
             temporalLinks = temporalLinks,
         )
         episodes.add(episode)

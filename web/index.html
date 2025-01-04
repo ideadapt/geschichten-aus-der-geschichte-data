@@ -68,6 +68,10 @@
         .col-date {
             text-align: right;
         }
+
+        .col-description {
+            width: 30%;
+        }
     </style>
 </head>
 <body>
@@ -351,6 +355,7 @@
                 <th>Erscheinungsdatum</th>
                 <th>Erwähnte Episoden</th>
                 <th>Zeitreferenzen</th>
+                <th>Beschreibung</th>
                 <th>Dauer</th>
                 </thead>
                 <tbody>${gagData.map(e =>
@@ -382,6 +387,11 @@
                                             <small>${link.start} - ${link.end}</small>
                                         `)
                                 }
+                                </td>
+                                <td class="col-description">
+                                    <small>
+                                        ${e.description}
+                                    </small>
                                 </td>
                                 <td>${new Date(e.durationInSeconds * 1000).toISOString().substring(11, 19)}</td>
                             </tr>
