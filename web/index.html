@@ -4,6 +4,7 @@
     <meta charset="UTF-8"/>
     <title>Geschichten aus der Geschichte - Episoden Links Graph</title>
     <script src="./orb.min.js" defer></script>
+    <script src="./vis-timeline-graph2d.standalone.min.js" defer></script>
     <style>
         body, html {
             margin: 1rem;
@@ -19,6 +20,15 @@
             width: 100%;
             height: 100vw;
             border: 1px solid #ddd;
+        }
+
+        .vis-item {
+            font-size: 12px;
+        }
+
+        .vis-item.vis-dot {
+            background-color: #D19000;
+            border-color: #D19000;
         }
 
         table td {
@@ -249,14 +259,23 @@
 <!--@formatter:on-->
 <p>Diese Seite zeigt Metadaten der regulären Episoden (keine Feedback- oder Extra- / Bonus-Episoden) des Podcasts
     "Geschichten aus der Geschichte", siehe <a
-        href="https://geschichte.fm">geschichte.fm</a>.</p>
+            href="https://geschichte.fm">geschichte.fm</a>.</p>
+<p>Springe direkt zu: <a href="#graph">Netzwerk-Graph</a>, <a href="#timeline">Zeitachse</a></p>
 <div id="raw-data">
-    <div id="data-table">loading table</div>
+    <div id="data-table">
+        🔄 Lade Tabelle
+    </div>
 </div>
 <h2>Episodenverweise &dash; Netzwerk-Graph</h2>
 <p>Doppelklick auf Kreis / Knotenpunkt um zur Episode zu springen. Scrollen um zu zoomen. Klick + Ziehen um zu
     verschieben.</p>
-<div id="graph">loading graph</div>
+<div id="graph">🔄 Lade Netzwerk-Graph</div>
+<h2>Episode auf Zeitachse / Timeline</h2>
+<p>Doppelklick auf Name um zur Episode zu springen. Scrollen + CTRL um zu zoomen. Klick + Ziehen um zu
+    verschieben.</p>
+<div id="timeline">
+    <div id="vis-timeline">🔄 Lade Zeitachse</div>
+</div>
 <hr>
 <footer>
     <p>
@@ -286,8 +305,39 @@
 <script type="module">
     import {html, render} from './htm-preact.standalone.module.js'
 
-    function renderGraph(gagData) {
+    function renderTimeline(gagData) {
+        const $container = document.getElementById('vis-timeline');
 
+        const items = new vis.DataSet(
+            gagData
+                .filter(e => e.temporalLinks.length > 0)
+                .map(e => ({
+                    id: e.id,
+                    content: e.title,
+                    start: e.temporalLinks[0].start,
+                    end: e.temporalLinks[0].end,
+                    type: 'point'
+                })))
+
+        const options = {
+            verticalScroll: true,
+            horizontalScroll: true,
+            zoomKey: 'ctrlKey',
+            autoResize: true,
+            height: '80vh',
+            showCurrentTime: false,
+        }
+
+        $container.innerHTML = ''
+        const timeline = new vis.Timeline($container, items, options)
+
+        timeline.on('doubleClick', (props) => {
+            const episodeId = timeline.getSelection()
+            window.location.hash = episodeId
+        })
+    }
+
+    function renderGraph(gagData) {
         const edges = gagData.map((episode, eIdx) =>
             episode.episodeLinks.map((link, lIdx) => ({
                 id: `${eIdx},${lIdx}`,
@@ -307,9 +357,6 @@
                 id: episode.id,
                 label: episode.title
             }))
-
-        console.log(edges)
-        console.log(nodes)
 
         const $container = document.getElementById("graph")
         $container.innerHTML = ''
@@ -405,10 +452,12 @@
         if (document.readyState === 'complete') {
             renderDataTable(data)
             renderGraph(data)
+            renderTimeline(data)
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                 renderDataTable(data)
                 renderGraph(data)
+                renderTimeline(data)
             })
         }
     }).catch(e => console.error('error loading gag data', e))
