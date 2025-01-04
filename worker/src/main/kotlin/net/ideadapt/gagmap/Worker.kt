@@ -148,7 +148,8 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
         Regex("\\d\\d?\\. Jahrhunderts?( vdZw)?") to TemporalRef.Companion.Mode.Jh,
         Regex("Jahr \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.J,
         Regex("\\d{1,4}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzAbsolute,
-        // Regex("\\d{1,2}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzImplicit, // only 4 cases so far
+        // only 2 cases so far (episodes 118 and 158), both of them contain other date refs in their description.
+        // Regex("\\d{1,2}er Jahren?( vdZw)?") to TemporalRef.Companion.Mode.JzImplicit,
     )
     val links = mutableListOf<TemporalRef>()
     while (!done) {
@@ -224,17 +225,7 @@ data class TemporalRef(val literal: String, val displayText: String, val start: 
                     if (vdzw) {
                         parseGermanDate("1. Januar ${-decade - 9}")
                     } else {
-                        val fixedDecade = if (decade == 0) 1 else {
-                            if (decade in 10..99) {
-                                // JzImplicit logic ...
-                                // heuristics to normalize e.g. "20er jahre" to "1920er jahre"
-                                // which might be overengineered (since up until now, gag descriptions don't contain such references, but always use "1980er Jahre")
-                                // and it may even lead to wrong dates at some later point in time, when we refer to 2010-2019 as "10er Jahre" ...
-                                decade + 1900
-                            } else {
-                                decade
-                            }
-                        }
+                        val fixedDecade = if (decade == 0) 1 else decade
                         parseGermanDate("1. Januar $fixedDecade")
                     }.atStartOfDay().toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS).toKotlinInstant()
                 }
