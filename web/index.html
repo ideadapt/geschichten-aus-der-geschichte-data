@@ -49,13 +49,22 @@
 
         .anchor-marker {
             width: 0;
-            height: 3ex;
+            height: 100%;
             position: absolute;
-            left: -3px;
+            top: 0;
+            left: -5px;
+        }
+
+        tr:has(.episode-anchor:target) {
+            background-color: rgba(209, 144, 0, 0.2);
         }
 
         .episode-anchor:target + .anchor-marker {
-            border-left: 3px solid #D19000;
+            border-left: 5px solid #D19000;
+        }
+
+        tr:hover {
+            background-color: rgba(209, 144, 0, 0.2);
         }
 
         .col-episode-links a {
@@ -439,7 +448,7 @@
                                 </td>
                                 <td class="col-temporal-links">${e.temporalLinks
                                         .map(link => html`
-                                            <div>${link.displayText}</div>
+                                            <div>${link.normalized}</div>
                                             <small>${link.start} - ${link.end}</small>
                                         `)
                                 }

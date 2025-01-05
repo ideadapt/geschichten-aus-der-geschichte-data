@@ -6,21 +6,29 @@ GAG), https://www.geschichte.fm.
 
 Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
 
-* GeschichteFM Feed von Podigee.io https://geschichten-aus-der-geschichte.podigee.io/feed/mp3
+* GeschichteFM Podcast-Feed von Podigee.io https://geschichten-aus-der-geschichte.podigee.io/feed/mp3
 
 ## Metadaten
 
-* Titel
-* erwähnte Episoden
-* erwähnte Zeitreferenzen (Jahrhunderte, exakte Daten)
-* Beschreibung
-* Dauer
-* Link zur Audio-Datei
-* Erscheinungsdatum
-* Link zur Webseite
+| Name                    | Quelle       | Format                                                               |
+|-------------------------|--------------|----------------------------------------------------------------------|
+| Title                   | Podcast-Feed | Text                                                                 |
+| Erwähnte Episoden       | Podcast-Feed | Array<Number>                                                        |
+| Erwähnte Zeitreferenzen | Podcast-Feed | Array<{ literal: string, normalized: string, from: date, to: date }> |
+| Beschreibung            | Podcast-Feed | Text                                                                 |
+| Dauer                   | Podcast-Feed | Number, in Sekunden                                                  |
+| Link zur Audio-Datei    | Podcast-Feed | Text, URL                                                            |
+| Erscheinungsdatum       | Podcast-Feed | Date                                                                 |
+| Link zur Webseite       | Podcast-Feed | Text, URL                                                            |
 
 Die Metadaten werden [automatisch](./.github/workflows/update-data.yaml) jede Woche aktualisiert und sind hier in diesem
 Repository [abgelegt im JSONL Format](./data/episodes.jsonl) (menschen- und maschinenlesbar).
+
+### Weitere Möglichkeiten / TODO
+
+- Personen (aus Text via AI)
+- Ortsangaben (inklusive Visualisierung auf Karte) (aus Text via AI)
+- Themenbereiche (aus Text via AI, oder gag-network)
 
 ## Visualisierung
 

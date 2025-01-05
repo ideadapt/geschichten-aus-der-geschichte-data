@@ -169,12 +169,12 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
 }
 
 @Serializable
-data class TemporalRef(val literal: String, val displayText: String, val start: Instant, val end: Instant) {
+data class TemporalRef(val literal: String, val normalized: String, val start: Instant, val end: Instant) {
 
     // TODO make TemporalRef parsing more nice
     constructor(literal: String, mode: Mode, vdzw: Boolean) : this(
         literal = literal,
-        displayText = literal
+        normalized = literal
             .replace("Jahr ", "")
             .replace("er Jahren", "er Jahre")
             .replace("Jahrhunderts", "Jh.")
