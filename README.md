@@ -60,6 +60,19 @@ https://github.com/benlutz/gag-timeline
 
 Das Projekt verwendet als Datengrundlage den RSS-Feed. Die Jahreszahlen wurden automatisch und manuell ermittelt.
 
+## GAG-Podcast-Episodes-Chronological-Order
+
+Extrahiert Jahreszahlen aus der Episodenbeschreibung, mithilfe von AI.
+
+https://github.com/JakobAtTUM/GAG-Podcast-Episodes-Chronological-Order
+
+### Design
+
+Das Projekt verwendet als Datengrundlage das HTML Podcast-Archiv. Die Jahreszahlen werden via AI aus dem semantischen
+Kontext abgeleitet.
+Dadurch sind praktisch für jede Episode Jahreszahlen verfügbar. Die Ergebnisse sind in einem öffentlichen Google Sheet
+gespeichert.
+
 ## musixmatch podcasts
 
 Index vieler Podcasts. AI angereicherte Metadaten.
