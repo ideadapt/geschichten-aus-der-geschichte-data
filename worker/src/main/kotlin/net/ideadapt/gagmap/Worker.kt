@@ -25,6 +25,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.zip.CRC32
 import javax.xml.parsers.DocumentBuilderFactory
 
 
@@ -32,14 +33,54 @@ fun main() {
     val feedStream: InputStream = URI("https://www.geschichte.fm/feed/mp3").toURL().openStream()
     Files.copy(feedStream, Paths.get("data/feed.xml"), StandardCopyOption.REPLACE_EXISTING)
     val feedXmlFile = File("data/feed.xml")
-    val document = parseXmlFile(feedXmlFile)
-    val episodes = parseRssFeed(document)
-    val db = File("data/episodes.jsonl")
-    db.delete()
-    episodes.forEach {
-        val episodeJson = Json.encodeToString(it)
-        db.appendText(episodeJson + "\n")
+    val feedXmlDocument = parseXmlFile(feedXmlFile)
+    val xmlEpisodes = getEpisodeElements(feedXmlDocument)
+    val episodeDumpFile = File("data/episodes.jsonl")
+    val existingEpisodes =
+        episodeDumpFile
+            .readLines()
+            .map { Json.decodeFromString<Episode>(it) }
+            .associateBy { it.id }
+            .toMutableMap()
+
+    // create episode object with only information contained in the xml text.
+    // this is elementary + fast.
+    xmlEpisodes.forEach { xmlEpisode ->
+        val xmlEpisodeChecksum = xmlEpisode.value.textContent.checksum()
+        val maybeExistingEpisode = existingEpisodes[xmlEpisode.key]
+        if (maybeExistingEpisode == null || xmlEpisodeChecksum != maybeExistingEpisode.checksum) {
+            println("Extract metadata from xml text for episode ${xmlEpisode.key}")
+            val episode = parseXmlEpisode(xmlEpisode.value)
+            existingEpisodes[xmlEpisode.key] = episode
+        }
     }
+
+    // try to find / extract more data using more expensive tooling, such as AI or other GAG metadata dumps.
+    xmlEpisodes.forEach { xmlEpisode ->
+        val existingEpisode = existingEpisodes[xmlEpisode.key]!!
+
+        if (existingEpisode.transcript.isEmpty()) {
+            // TODO
+            // println("Extract transcript for episode ${existingEpisode.id}")
+        }
+    }
+
+    episodeDumpFile.delete()
+    existingEpisodes
+        .values
+        .sortedBy { it.id }
+        .reversed()
+        .forEach {
+            val episodeJson = Json.encodeToString(it)
+            episodeDumpFile.appendText(episodeJson + "\n")
+        }
+}
+
+fun String.checksum(): Long {
+    val bytes = this.toByteArray()
+    val crc32 = CRC32()
+    crc32.update(bytes, 0, bytes.size)
+    return crc32.value
 }
 
 fun parseXmlFile(file: File): Document {
@@ -50,48 +91,55 @@ fun parseXmlFile(file: File): Document {
     }
 }
 
-fun parseRssFeed(document: Document): MutableList<Episode> {
+fun getEpisodeElements(document: Document): Map<Int, Element> {
     val rssElement = document.documentElement
     if (rssElement.tagName != "rss") {
         throw IllegalArgumentException("Invalid RSS feed XML, missing 'rss' start tag.")
     }
     val channelElement = rssElement.getElementsByTagName("channel").item(0) as Element
     val items = channelElement.getElementsByTagName("item")
-    val episodes = mutableListOf<Episode>()
+    val episodes = mutableMapOf<Int, Element>()
     for (i in 0 until items.length) {
         val itemElement = items.item(i) as Element
         val title = itemElement.getSingleChildText("title")
-
         if (!title.startsWith("GAG")) continue // skip Feedback (FGAG) or Bonus / Extra episodes.
-
         val episodeNumber = itemElement.getSingleChildText("itunes:episode").toInt()
-        val pubDate = itemElement.getSingleChildText("pubDate")
-        val contentEncoded = itemElement.getSingleChildText("content:encoded")
-        val description = itemElement.getSingleChildText("description")
-        val durationInSeconds = itemElement.getSingleChildText("itunes:duration").toLong()
-        val audioUrl = itemElement.getSingleChild("enclosure").attributes.getNamedItem("url").textContent
-
-        val episodeLinks = extractEpisodeLinks(contentEncoded, episodeNumber)
-        val descriptionNormalized = normalizeDescription(description)
-        val temporalLinks = extractTemporalRefs(descriptionNormalized)
-
-        val episode = Episode(
-            id = episodeNumber,
-            title = title.replace(Regex("GAG\\d\\d\\d?: "), ""),
-            // Wed, 29 May 2024 07:00:00 +0000
-            date = ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toKotlinInstant(),
-            websiteUrl = URI("https://gadg.fm/$episodeNumber"),
-            audioUrl = URI(audioUrl),
-            durationInSeconds = durationInSeconds,
-            episodeLinks = episodeLinks,
-            description = descriptionNormalized,
-            transcript = "", // TODO scrape from musixmatch
-            literature = emptyList(), // TODO extract from feed.xml
-            temporalLinks = temporalLinks,
-        )
-        episodes.add(episode)
+        episodes[episodeNumber] = itemElement
     }
     return episodes
+}
+
+private fun parseXmlEpisode(
+    itemElement: Element,
+): Episode {
+    val episodeNumber = itemElement.getSingleChildText("itunes:episode").toInt()
+    val title = itemElement.getSingleChildText("title")
+    val pubDate = itemElement.getSingleChildText("pubDate")
+    val contentEncoded = itemElement.getSingleChildText("content:encoded")
+    val description = itemElement.getSingleChildText("description")
+    val durationInSeconds = itemElement.getSingleChildText("itunes:duration").toLong()
+    val audioUrl = itemElement.getSingleChild("enclosure").attributes.getNamedItem("url").textContent
+
+    val episodeLinks = extractEpisodeLinks(contentEncoded, episodeNumber)
+    val descriptionNormalized = normalizeDescription(description)
+    val temporalLinks = extractTemporalRefs(descriptionNormalized)
+
+    val episode = Episode(
+        id = episodeNumber,
+        checksum = itemElement.textContent.checksum(),
+        title = title.replace(Regex("GAG\\d\\d\\d?: "), ""),
+        // Wed, 29 May 2024 07:00:00 +0000
+        date = ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toKotlinInstant(),
+        websiteUrl = URI("https://gadg.fm/$episodeNumber"),
+        audioUrl = URI(audioUrl),
+        durationInSeconds = durationInSeconds,
+        episodeLinks = episodeLinks,
+        description = descriptionNormalized,
+        transcript = "", // TODO scrape from musixmatch
+        literature = emptyList(), // TODO extract from feed.xml
+        temporalLinks = temporalLinks,
+    )
+    return episode
 }
 
 private fun extractEpisodeLinks(contentEncoded: String, episodeNumber: Int): List<Int> {
@@ -322,6 +370,7 @@ fun Element.getSingleChild(tagName: String): Node {
 @Serializable
 data class Episode(
     val id: Int,
+    val checksum: Long = 0L,
     val title: String,
     val date: Instant,
     val durationInSeconds: Long,
