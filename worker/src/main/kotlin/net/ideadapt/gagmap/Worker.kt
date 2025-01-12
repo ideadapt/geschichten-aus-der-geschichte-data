@@ -31,12 +31,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 
 fun main() {
-    val feedStream: InputStream = URI("https://www.geschichte.fm/feed/mp3").toURL().openStream()
-    Files.copy(feedStream, Paths.get("data/feed.xml"), StandardCopyOption.REPLACE_EXISTING)
-    val feedXmlFile = File("data/feed.xml")
-    val feedXmlDocument = parseXmlFile(feedXmlFile)
-    val xmlEpisodes = getEpisodeElements(feedXmlDocument)
     val episodeDumpFile = File("data/episodes.jsonl")
+    episodeDumpFile.createNewFile() // create if not exists
     val existingEpisodes =
         episodeDumpFile
             .readLines()
@@ -44,6 +40,11 @@ fun main() {
             .associateBy { it.id }
             .toMutableMap()
 
+    val feedStream: InputStream = URI("https://www.geschichte.fm/feed/mp3").toURL().openStream()
+    Files.copy(feedStream, Paths.get("data/feed.xml"), StandardCopyOption.REPLACE_EXISTING)
+    val feedXmlFile = File("data/feed.xml")
+    val feedXmlDocument = parseXmlFile(feedXmlFile)
+    val xmlEpisodes = getEpisodeElements(feedXmlDocument)
     // create episode object with only information contained in the xml text.
     // this is elementary + fast.
     xmlEpisodes.forEach { xmlEpisode ->
