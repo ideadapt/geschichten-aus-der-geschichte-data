@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.jvm)
     alias(libs.plugins.ser)
+    id("io.ktor.plugin") version "2.3.12"
     application
 }
 
@@ -12,8 +13,11 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0-RC")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
     implementation("com.aallam.openai:openai-client:3.8.2")
-    implementation("io.ktor:ktor-client-java:3.0.3")
-
+    implementation("ch.qos.logback:logback-classic:1.4.14")
+    implementation("io.ktor:ktor-client-logging:2.3.12")
+    implementation("io.ktor:ktor-client-core:2.3.12")
+    implementation("io.ktor:ktor-client-java:2.3.12")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(libs.junit.jupiter.engine)

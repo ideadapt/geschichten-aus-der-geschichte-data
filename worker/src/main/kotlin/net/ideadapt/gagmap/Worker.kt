@@ -1,5 +1,6 @@
 package net.ideadapt.gagmap
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -9,6 +10,7 @@ import kotlinx.serialization.Serializer
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 import org.w3c.dom.Node
@@ -28,6 +30,7 @@ import java.util.*
 import java.util.zip.CRC32
 import javax.xml.parsers.DocumentBuilderFactory
 
+private val logger = LoggerFactory.getLogger("net.ideadapt.gagmap")
 
 fun main() {
     val episodeDumpFile = File("data/episodes.jsonl")
@@ -44,37 +47,43 @@ fun main() {
     val feedXmlFile = File("data/feed.xml")
     val feedXmlDocument = parseXmlFile(feedXmlFile)
     val xmlEpisodes = getEpisodeElements(feedXmlDocument)
-    // create episode object with only information contained in the xml text.
+
+    // create episode objects with only information contained in the xml text.
     // this is elementary + fast.
     xmlEpisodes.forEach { xmlEpisode ->
         val xmlEpisodeChecksum = xmlEpisode.value.textContent.checksum()
         val maybeExistingEpisode = existingEpisodes[xmlEpisode.key]
         if (maybeExistingEpisode == null || xmlEpisodeChecksum != maybeExistingEpisode.checksum) {
-            println("Extract metadata from xml text for episode ${xmlEpisode.key}")
+            logger.info("Extract metadata from XML text for episode ${xmlEpisode.key}")
             val episode = parseXmlEpisode(xmlEpisode.value)
             existingEpisodes[xmlEpisode.key] = episode
         }
     }
+    dumpEpisodes(episodeDumpFile, existingEpisodes)
 
     // try to find / extract more data using more expensive tooling, such as AI or other GAG metadata dumps.
-    xmlEpisodes.keys.forEach { xmlEpisodeId ->
-        val existingEpisode = existingEpisodes[xmlEpisodeId]!!
-        println("Extracting locations for episode ${existingEpisode.id}")
-
-        if (existingEpisode.locations == null) {
-            // TODO
-//            runBlocking {
-//                val aiClient = AiClient()
-//                aiClient.extractGeoLocations(existingEpisode.description.lines())
-//            }
+    xmlEpisodes.keys
+        .map { existingEpisodes[it]!! }
+        .filter { it.locations == null }
+        .windowed(size = 10, step = 10)
+        .forEach { episodes ->
+            logger.info("Extracting locations for episodes ${episodes.joinToString { it.id.toString() }}.")
+            runBlocking {
+                val aiClient = AiClient()
+                val locations = aiClient.extractGeoLocations(episodes.associate { it.id to it.description })
+                logger.info("Extracted locations ${locations.map { it.key.toString() + ": " + it.value }}.")
+                episodes.forEach {
+                    it.locations = locations[it.id]
+                }
+                dumpEpisodes(episodeDumpFile, existingEpisodes)
+            }
         }
+}
 
-        if (existingEpisode.transcript == null) {
-            // TODO
-            // println("Extract transcript for episode ${existingEpisode.id}")
-        }
-    }
-
+private fun dumpEpisodes(
+    episodeDumpFile: File,
+    existingEpisodes: MutableMap<Int, Episode>
+) {
     episodeDumpFile.delete()
     existingEpisodes
         .values
@@ -137,7 +146,7 @@ private fun parseXmlEpisode(
     val episode = Episode(
         id = episodeNumber,
         checksum = itemElement.textContent.checksum(),
-        title = title.replace(Regex("GAG\\d\\d\\d?: "), ""),
+        title = normalizeWhitespace(title.replace(Regex("GAG\\d\\d\\d?: "), "")),
         // Wed, 29 May 2024 07:00:00 +0000
         date = ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant().toKotlinInstant(),
         websiteUrl = URI("https://gadg.fm/$episodeNumber"),
@@ -179,13 +188,13 @@ private fun normalizeDescription(description: String) = description
     // ad block in description field starts with "aus unserer werbung" headings (html or plain text or other markup)
     // literature or related episodes or other blocks after the description text start with Regex("// ?")
     .takeWhile { !it.contains("aus unserer werbung", ignoreCase = true) && !it.startsWith("//") }
-    .map { line ->
-        line
-            .filter { it == ' ' || !it.isWhitespace() }
-            .replace("  ", " ")
-            .trim()
-    }
+    .map { line -> normalizeWhitespace(line) }
     .joinToString(" ")
+
+private fun normalizeWhitespace(line: String) = line
+    .filter { it == ' ' || !it.isWhitespace() }
+    .replace("  ", " ")
+    .trim()
 
 fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
     val links = mutableListOf<TemporalRef>()
@@ -393,7 +402,7 @@ data class Episode(
     val description: String,
     val episodeLinks: List<Int>,
     val temporalLinks: List<TemporalRef>,
-    val locations: List<Location>? = null,
+    var locations: List<Location>? = null,
     val literature: List<String>? = null,
 )
 
