@@ -1,5 +1,6 @@
 package net.ideadapt.gagmap
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -135,9 +136,10 @@ private fun parseXmlEpisode(
         durationInSeconds = durationInSeconds,
         episodeLinks = episodeLinks,
         description = descriptionNormalized,
-        transcript = "", // TODO scrape from musixmatch
-        literature = emptyList(), // TODO extract from feed.xml
         temporalLinks = temporalLinks,
+        transcript = null, // TODO scrape from musixmatch
+        locations = null,  // TODO use AI
+        literature = null, // TODO extract from feed.xml
     )
     return episode
 }
@@ -378,12 +380,16 @@ data class Episode(
     val websiteUrl: URI,
     @Serializable(with = URISerializer::class)
     val audioUrl: URI,
-    val transcript: String,
+    val transcript: String? = null,
     val description: String,
     val episodeLinks: List<Int>,
     val temporalLinks: List<TemporalRef>,
-    val literature: List<String>,
+    val locations: List<Location>? = null,
+    val literature: List<String>? = null,
 )
+
+@Serializable
+data class Location(val name: String, val latitude: Double, val longitude: Double)
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializer(forClass = URI::class)
