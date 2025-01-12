@@ -11,6 +11,9 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0-RC")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+    implementation("com.aallam.openai:openai-client:3.8.2")
+    implementation("io.ktor:ktor-client-java:3.0.3")
+
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(libs.junit.jupiter.engine)

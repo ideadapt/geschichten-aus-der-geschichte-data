@@ -5,3 +5,5 @@
 build
 
 .kotlin
+
+/worker/src/main/resources/.env
