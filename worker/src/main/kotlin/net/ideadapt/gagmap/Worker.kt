@@ -1,6 +1,5 @@
 package net.ideadapt.gagmap
 
-import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toKotlinInstant
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -58,10 +57,19 @@ fun main() {
     }
 
     // try to find / extract more data using more expensive tooling, such as AI or other GAG metadata dumps.
-    xmlEpisodes.forEach { xmlEpisode ->
-        val existingEpisode = existingEpisodes[xmlEpisode.key]!!
+    xmlEpisodes.keys.forEach { xmlEpisodeId ->
+        val existingEpisode = existingEpisodes[xmlEpisodeId]!!
+        println("Extracting locations for episode ${existingEpisode.id}")
 
-        if (existingEpisode.transcript.isEmpty()) {
+        if (existingEpisode.locations == null) {
+            // TODO
+//            runBlocking {
+//                val aiClient = AiClient()
+//                aiClient.extractGeoLocations(existingEpisode.description.lines())
+//            }
+        }
+
+        if (existingEpisode.transcript == null) {
             // TODO
             // println("Extract transcript for episode ${existingEpisode.id}")
         }
