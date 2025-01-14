@@ -107,7 +107,13 @@ class AiClient(
 
         return geoLocationsLines
             .associate {
-                val episodeId = it.substringBefore(":").toInt()
+                val episodeId = try {
+                    it.substringBefore(":").toInt()
+                } catch (ex: Exception) {
+                    logger.info("No episodeId prefix in AI response '$it'. Ignoring response.")
+                    logger.error(ex.message, ex)
+                    -1
+                }
                 try {
                     val locations = Json.decodeFromString<List<Location>>(it.substringAfter(":"))
                     episodeId to locations
@@ -119,5 +125,6 @@ class AiClient(
             .mapValues { entry ->
                 entry.value?.filter { it.latitude != 0.0 && it.longitude != 0.0 }
             }
+            .withDefault { null }
     }
 }

@@ -233,15 +233,22 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
             } == true
         });
 
-    return links.toSet().toList()
+    return links.toSortedSet(compareBy { it.mode.ordinal }).toList()
 }
 
 @Serializable
-data class TemporalRef(val literal: String, val normalized: String, val start: Instant, val end: Instant) {
+data class TemporalRef(
+    val literal: String,
+    val mode: Mode,
+    val normalized: String,
+    val start: Instant,
+    val end: Instant
+) {
 
     // TODO make TemporalRef parsing more nice
     constructor(literal: String, mode: Mode, vdzw: Boolean) : this(
         literal = literal,
+        mode = mode,
         normalized = literal
             .replace("Jahr ", "")
             .replace("er Jahren", "er Jahre")
