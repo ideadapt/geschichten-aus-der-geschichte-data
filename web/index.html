@@ -5,6 +5,7 @@
     <title>Geschichten aus der Geschichte - Episoden Daten</title>
     <script src="./orb.min.js" defer></script>
     <script src="./vis-timeline-graph2d.standalone.min.js" defer></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
         body, html {
@@ -91,6 +92,10 @@
 
         .col-description {
             width: 30%;
+        }
+
+        #map {
+            height: 100vh;
         }
     </style>
 </head>
@@ -207,7 +212,8 @@
 <p>Diese Seite zeigt Metadaten der regulären Episoden (keine Feedback- oder Extra- / Bonus-Episoden) des Podcasts
     "Geschichten aus der Geschichte", siehe <a
             href="https://geschichte.fm">geschichte.fm</a>.</p>
-<p>Springe direkt zu: <a href="#graph">Netzwerk-Graph</a>, <a href="#timeline">Zeitachse</a></p>
+<p>Springe direkt zu: <a href="#graph">Netzwerk-Graph</a>, <a href="#timeline">Zeitachse</a>, <a href="#map">Karte</a>
+</p>
 <div id="raw-data">
     <div id="data-table">
         🔄 Lade Tabelle
@@ -218,10 +224,19 @@
     verschieben.</p>
 <div id="graph">🔄 Lade Netzwerk-Graph</div>
 <h2>Episode auf Zeitachse / Timeline</h2>
+<p>Zeigt nur Episoden mit Zeitreferenzen. Es wird die erste Zeitreferenz verwendet, das ist die präziseste.</p>
 <p>Doppelklick auf Name um zur Episode zu springen. Scrollen + CTRL um zu zoomen. Klick + Ziehen um zu
     verschieben.</p>
 <div id="timeline">
     <div id="vis-timeline">🔄 Lade Zeitachse</div>
+</div>
+<h2>Episoden auf Karte (Work in Progress)</h2>
+<p>Zeigt nur Episoden mit Ortsangaben. Falls mehrere Ortsangaben in einer Episode vorkommen, wird die Episode mehrfach
+    angezeigt.</p>
+<p>Doppelklick auf Name um zur Episode zu springen. Scrollen um zu zoomen. Klick + Ziehen um zu
+    verschieben.</p>
+<div id="map">
+    <div id="vis-map">🔄 Lade Karte</div>
 </div>
 <hr>
 <footer>
@@ -259,6 +274,7 @@
             gagData
                 .filter(e => e.temporalLinks.length > 0)
                 .map(e => {
+                    // temporalLinks[0] is the most precise one
                     const start = e.temporalLinks[0].start
                     const end = e.temporalLinks[0].end
                     // see https://github.com/visjs/vis-timeline/issues/1505
@@ -403,16 +419,78 @@
             </table>`, $table)
     }
 
+    function renderMap(gagData) {
+        const edges = gagData.map((episode, eIdx) =>
+            episode.locations?.map((link, lIdx) => ({
+                id: `${eIdx},${lIdx}`,
+                start: episode.id,
+                // TODO connect locations of same episode as a closed graph
+                end: undefined
+            })) || []
+        ).flat()
+        const usedIds = new Set()
+        edges.forEach(e => {
+            usedIds.add(e.start)
+        })
+
+        const nodes = gagData
+            .filter(episode => usedIds.has(episode.id))
+            .map(episode => ({
+                id: episode.id,
+                label: episode.title,
+                // TODO e.g. center of germany has way too many nodes.
+                //  maybe we can spread similar coordinates in a circle?
+                lat: episode.locations[0].latitude,
+                lng: episode.locations[0].longitude,
+            }))
+
+        const $container = document.getElementById("map")
+        $container.innerHTML = ''
+        const orb = new Orb.Orb($container);
+        orb.setView(
+            (context) =>
+                new Orb.MapView(context, {
+                    getGeoPosition: (node) => ({lat: node.data.lat, lng: node.data.lng}),
+                })
+        )
+
+        orb.data.setDefaultStyle({
+            getNodeStyle(node) {
+                return {
+                    color: '#D19000',
+                    size: 5,
+                    label: node.data.label,
+                    fontSize: 10
+                };
+            },
+            getEdgeStyle() {
+                return {
+                    color: '#DDD',
+                    width: 1,
+                };
+            },
+        })
+
+        orb.events.on('node-double-click', event => {
+            window.location.hash = event.node.id
+        });
+        orb.data.setup({nodes, edges})
+
+        orb.view.render(() => orb.view.recenter())
+    }
+
     window.gagData.then(data => {
         if (document.readyState === 'complete') {
             renderDataTable(data)
             renderGraph(data)
             renderTimeline(data)
+            renderMap(data)
         } else {
             document.addEventListener('DOMContentLoaded', () => {
                 renderDataTable(data)
                 renderGraph(data)
                 renderTimeline(data)
+                renderMap(data)
             })
         }
     }).catch(e => console.error('error loading gag data', e))
