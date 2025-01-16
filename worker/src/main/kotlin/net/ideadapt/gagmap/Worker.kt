@@ -233,7 +233,7 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
             } == true
         });
 
-    return links.toSortedSet(compareBy { it.mode.ordinal }).toList()
+    return links.toSet().sortedBy { it.mode }.toList()
 }
 
 @Serializable
