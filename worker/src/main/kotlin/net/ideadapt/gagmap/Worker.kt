@@ -65,7 +65,7 @@ fun main() {
     xmlEpisodes.keys
         .map { existingEpisodes[it]!! }
         .filter { it.locations == null }
-        .windowed(size = 10, step = 10)
+        .windowed(size = 10, step = 10, partialWindows = true)
         .forEach { episodes ->
             logger.info("Extracting locations for episodes ${episodes.joinToString { it.id.toString() }}.")
             runBlocking {
@@ -156,8 +156,8 @@ private fun parseXmlEpisode(
         description = descriptionNormalized,
         temporalLinks = temporalLinks,
         transcript = null, // TODO scrape from musixmatch
-        locations = null,  // TODO use AI
         literature = null, // TODO extract from feed.xml
+        locations = null,
     )
     return episode
 }
