@@ -6,8 +6,11 @@ object Config {
     private val props: Properties = Properties()
 
     init {
-        props.load(javaClass.classLoader.getResourceAsStream(".env"))
+        val resourceAsStream = javaClass.classLoader.getResourceAsStream(".env")
+        if (resourceAsStream != null) {
+            props.load(resourceAsStream)
+        }
     }
 
-    fun get(key: String): String? = props[key]?.toString()
+    fun get(key: String): String? = props[key]?.toString() ?: System.getenv(key)
 }

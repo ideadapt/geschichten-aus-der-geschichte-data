@@ -206,6 +206,7 @@ fun extractTemporalRefs(descriptionNormalized: String): List<TemporalRef> {
     // Jahr 2022
     // 2000er Jahren?
     // 30er Jahren? des 20. (JH|Jahrhunderts?)
+    // TODO des Jahres 1970
     val monthNames = "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
     val regexToModes = listOf(
         Regex("\\d\\d?\\. ($monthNames) \\d{1,4}( vdZw)?") to TemporalRef.Companion.Mode.Day,
