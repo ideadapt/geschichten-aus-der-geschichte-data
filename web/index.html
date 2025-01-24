@@ -5,7 +5,7 @@
     <title>Geschichten aus der Geschichte - Episoden Daten</title>
     <script src="./orb.min.js" defer></script>
     <script src="./vis-timeline-graph2d.standalone.min.js" defer></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="./leaflet.css"/>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
         body, html {
@@ -92,6 +92,15 @@
 
         .col-description {
             width: 30%;
+        }
+
+        .col-locations {
+            width: 10%;
+            max-width: 100px;
+        }
+
+        .col-locations a:not(:last-child) {
+            margin-right: 1ex;
         }
 
         #map {
@@ -422,12 +431,13 @@
         render(html`
             <table>
                 <thead>
-                <th>Nr</th>
+                <th class="col-id">Nr</th>
                 <th>Titel</th>
-                <th>Erscheinungsdatum</th>
-                <th>Erwähnte Episoden</th>
-                <th>Zeitreferenzen</th>
-                <th>Beschreibung</th>
+                <th class="col-date">Erscheinungsdatum</th>
+                <th class="col-episode-links">Erwähnte Episoden</th>
+                <th class="col-temporal-links">Zeitangaben</th>
+                <th class="col-head-locations">Ortsbezüge</th>
+                <th class="col-description">Beschreibung</th>
                 <th>Dauer</th>
                 </thead>
                 <tbody>${gagData.map(e =>
@@ -457,8 +467,13 @@
                                         .map(link => html`
                                             <div>${link.normalized}</div>
                                             <small>${link.start} - ${link.end}</small>
-                                        `)
-                                }
+                                        `)}
+                                </td>
+                                <td class="col-locations">${e.locations
+                                        .map(location => html`
+                                            <a href="https://www.openstreetmap.org/#map=6/${location.latitude}/${location.longitude}"
+                                               title="${location.latitude}, ${location.longitude}">${location.name}</a>
+                                        `)}
                                 </td>
                                 <td class="col-description">
                                     <small>

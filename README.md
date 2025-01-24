@@ -10,16 +10,21 @@ Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
 
 ## Metadaten
 
-| Name                    | Quelle       | Format                                                               |
-|-------------------------|--------------|----------------------------------------------------------------------|
-| Title                   | Podcast-Feed | Text                                                                 |
-| Erwähnte Episoden       | Podcast-Feed | Array<Number>                                                        |
-| Erwähnte Zeitreferenzen | Podcast-Feed | Array<{ literal: string, normalized: string, from: date, to: date }> |
-| Beschreibung            | Podcast-Feed | Text                                                                 |
-| Dauer                   | Podcast-Feed | Number, in Sekunden                                                  |
-| Link zur Audio-Datei    | Podcast-Feed | Text, URL                                                            |
-| Erscheinungsdatum       | Podcast-Feed | Date                                                                 |
-| Link zur Webseite       | Podcast-Feed | Text, URL                                                            |
+| Name                    | Quelle       | Format                                                                             |
+|-------------------------|--------------|------------------------------------------------------------------------------------|
+| Title                   | Podcast-Feed | string                                                                             |
+| Erwähnte Episoden       | Podcast-Feed | Array<number>                                                                      |
+| Erwähnte Zeitreferenzen | Podcast-Feed | Array<{ literal: string, mode: string, normalized: string, from: date, to: date }> |
+| Erwähnte Orte           | Podcast-Feed | Array<{ name: string, longitude: number, latitude: number }>                       |
+| Beschreibung            | Podcast-Feed | string                                                                             |
+| Dauer                   | Podcast-Feed | Number, in Sekunden                                                                |
+| Link zur Audio-Datei    | Podcast-Feed | string, URL                                                                        |
+| Erscheinungsdatum       | Podcast-Feed | string, Date                                                                       |
+| Link zur Webseite       | Podcast-Feed | string, URL                                                                        |
+
+Beispiel:
+
+`{"id":157,"checksum":1570449493,"title":"Salpeter – Aufstieg und Fall einer chemischen Verbindung","date":"2018-09-26T08:25:19Z","durationInSeconds":2160,"websiteUrl":"https://gadg.fm/157","audioUrl":"https://audio.podigee-cdn.net/543427-m-937b92fc738d6fbaa7b40f2b2d6f5a3a.mp3?source=feed","description":"Wir springen etwa 100 Jahre zurück und beschäftigen uns mit Chemiegeschichte: Es geht um Salpeter. Ein Stoff, Kaliumnitrat, von dem Europa im 19. Jahrhundert abhängig war, denn er war Hauptbestandteil von Schießpulver und Basis von Düngemittel für die Landwirtschaft. Mitte des 19. Jahrhunderts begann dann der industrielle Abbau von Salpeter. Nach dem Salpeterkrieg, ab 1884, sicherte sich Chile praktisch das Monopol auf den Handel mit Salpeter, das vor allem in der Atacama-Wüste abgebaut wurde. Doch der Boom währte nur kurz: Mit dem Haber-Bosch-Verfahren stand bald eine Alternative bereit, die dazu führte, dass der Handel mit Salpeter in den 1920er Jahren zusammenbrach und die vielen Fabriken in der Atacama-Wüste zu Geisterstädten wurden – die heute Teil des UNESCO Weltkultur-Erbes sind.","episodeLinks":[],"temporalLinks":[{"literal":"1920er Jahren","mode":"DecadeAbsolute","normalized":"1920er Jahre","start":"1920-01-01T00:00:00Z","end":"1929-12-31T23:59:59Z"}],"locations":[{"name":"Chile","latitude":-35.6751,"longitude":-71.5375},{"name":"Atacama-Wüste","latitude":-24.8742,"longitude":-69.2557}]}`
 
 Die Metadaten werden [automatisch](./.github/workflows/update-data.yaml) jede Woche aktualisiert und sind hier in diesem
 Repository [abgelegt im JSONL Format](./data/episodes.jsonl) (menschen- und maschinenlesbar).
@@ -27,7 +32,6 @@ Repository [abgelegt im JSONL Format](./data/episodes.jsonl) (menschen- und masc
 ### Weitere Möglichkeiten / TODO
 
 - Personen (aus Text via AI)
-- Ortsangaben (inklusive Visualisierung auf Karte) (aus Text via AI)
 - Themenbereiche (aus Text via AI, oder gag-network)
 
 ## Visualisierung
