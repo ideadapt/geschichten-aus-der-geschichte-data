@@ -27,8 +27,8 @@ jobs:
           git status --short | grep episodes || { echo "episodes.jsonl did not change"; exit 0; } && \
           git add ./data/episodes.jsonl && \
           git add ./data/feed.xml && \
-          bash inline-script.sh
-          git add web/index.html
+          bash inline-script.sh && \
+          git add web/index.html && \
           git config user.name "ideadapt[workflow]" && \
           git config user.email "1071386+ideadapt@users.noreply.github.com" && \
           git commit -m "latest feed with extracted episodes $(date)" && \
