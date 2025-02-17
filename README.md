@@ -90,6 +90,13 @@ API-Zugang auf Anfrage. Kosten unbekannt.
 
 https://podcasts.musixmatch.com/podcast/geschichten-aus-der-geschichte-01h1nzad7068wrm8ac14dqgmm1
 
+## shuffle-gag
+
+Das Projekt verwendet die Podcast-Feeds verschiedener Plattformen (z.B. Spotify, Apple) um deren Episoden URLs
+zu speichern. Danach kann man, z.B. auf dem iPhone, eine zufällige Folge hören.
+
+https://github.com/simonneutert/shuffle-gag
+
 ## Disclaimer
 
 Sämtliche Inhalte wurden nach bestem Wissen und Gewissen sorgfältig erstellt. Es besteht jedoch keine Garantie auf
