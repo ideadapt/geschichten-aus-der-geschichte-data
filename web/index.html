@@ -18,6 +18,10 @@
             border-left: 5px solid transparent;
         }
 
+        th:hover:not(.no-sort) {
+            cursor: pointer;
+        }
+
         #graph {
             width: 100%;
             height: 100vw;
@@ -114,6 +118,7 @@
             href="https://geschichte.fm">geschichte.fm</a>.</p>
 <p>Springe direkt zu: <a href="#graph">Netzwerk-Graph</a>, <a href="#timeline">Zeitachse</a>, <a href="#map">Karte</a>
 </p>
+<small>Klicke auf Spalten-Titel um zu sortieren.</small>
 <div id="raw-data">
     <div id="data-table">
         🔄 Lade Tabelle
@@ -250,27 +255,30 @@
         const gagDataById = groupBy(gagData, episode => episode.id)
         $table.innerHTML = ''
         render(html`
-            <table>
+            <table class="sortable asc sticky n-last">
                 <thead>
-                <th class="col-id">Nr</th>
-                <th>Titel</th>
-                <th class="col-date">Erscheinungsdatum</th>
-                <th class="col-episode-links">Erwähnte Episoden</th>
-                <th class="col-temporal-links">Zeitangaben</th>
-                <th class="col-head-locations">Ortsbezüge</th>
-                <th class="col-description">Beschreibung</th>
-                <th>Dauer</th>
+                <tr>
+                    <th class="col-id no-sort">Nr</th>
+                    <th>Titel</th>
+                    <th class="col-date">Erscheinungsdatum</th>
+                    <th class="col-episode-links no-sort">Erwähnte Episoden</th>
+                    <th class="col-temporal-links">Zeitangaben</th>
+                    <th class="col-head-locations no-sort">Ortsbezüge</th>
+                    <th class="col-description no-sort">Beschreibung</th>
+                    <th>Dauer</th>
+                </tr>
                 </thead>
                 <tbody>${gagData.map(e =>
                         html`
                             <tr>
-                                <td class="col-id">
+                                <td class="col-id no-sort">
                                     <a href="" id="${e.id}" class="episode-anchor"></a>
                                     <div class="anchor-marker"></div>
                                     <a href="${e.websiteUrl}" target="_blank">${e.id}</a>
                                 </td>
                                 <td>${e.title}</td>
-                                <td class="col-date">${new Date(e.date).toLocaleString("de", {
+                                <td class="col-date" data-sort="${new Date(e.date).getTime()}">
+                                    ${new Date(e.date).toLocaleString("de", {
                                     month: "short",
                                     year: "numeric",
                                     day: "2-digit",
@@ -278,25 +286,27 @@
                                     minute: "2-digit"
                                 }).replace(",", "")}
                                 </td>
-                                <td class="col-episode-links">${e.episodeLinks
+                                <td class="col-episode-links no-sort">${e.episodeLinks
                                         .map(episodeId => (gagDataById[episodeId]))
                                         .map(episode => (episode && html`
                                             <a title="${episode.title}" href="#${episode.id}">${episode.title}</a>
                                         `) || "")}
                                 </td>
-                                <td class="col-temporal-links">${e.temporalLinks
+                                <td class="col-temporal-links"
+                                    data-sort="${new Date(e.temporalLinks[0]?.start?.startsWith("-") ? e.temporalLinks[0]?.start.replace("-", "-00") : e.temporalLinks[0]?.start).getTime() || ''}">
+                                    ${e.temporalLinks
                                         .map(link => html`
                                             <div>${link.normalized}</div>
                                             <small>${link.start} - ${link.end}</small>
                                         `)}
                                 </td>
-                                <td class="col-locations">${e.locations
+                                <td class="col-locations no-sort">${e.locations
                                         .map(location => html`
                                             <a href="https://www.openstreetmap.org/#map=6/${location.latitude}/${location.longitude}"
                                                title="${location.latitude}, ${location.longitude}">${location.name}</a>
                                         `)}
                                 </td>
-                                <td class="col-description">
+                                <td class="col-description no-sort">
                                     <small>
                                         ${e.description}
                                     </small>
@@ -384,6 +394,58 @@
     } else {
         document.addEventListener('DOMContentLoaded', () => renderAll())
     }
+</script>
+<script>
+    /* from https://github.com/tofsjonas/sortable */
+    document.addEventListener("click", function (d) {
+        try {
+            var A = d.shiftKey || d.altKey, g = function l(a, m) {
+                return a.nodeName === m ? a : l(a.parentNode, m)
+            }(d.target, "TH"), v = g.parentNode, w = v.parentNode, h = w.parentNode;
+            if ("THEAD" === w.nodeName && h.classList.contains("sortable") && !g.classList.contains("no-sort")) {
+                var k = v.cells;
+                for (d = 0; d < k.length; d++) k[d] !== g && k[d].removeAttribute("aria-sort");
+                k = "descending";
+                ("descending" === g.getAttribute("aria-sort") || h.classList.contains("asc") && "ascending" !== g.getAttribute("aria-sort")) &&
+                (k = "ascending");
+                g.setAttribute("aria-sort", k);
+                h.dataset.timer && clearTimeout(+h.dataset.timer);
+                h.dataset.timer = setTimeout(function () {
+                    (function (a, m) {
+                        function l(b) {
+                            var e;
+                            return m && b.dataset.sortAlt ? b.dataset.sortAlt : null !== (e = b.dataset.sort) && void 0 !== e ? e : b.textContent
+                        }
+
+                        a.dispatchEvent(new Event("sort-start", {bubbles: !0}));
+                        for (var p = a.tHead.querySelector("th[aria-sort]"), q = a.tHead.children[0], B = "ascending" === p.getAttribute("aria-sort"), C = a.classList.contains("n-last"), y = function (b, e, c) {
+                            var f = l(e.cells[c]),
+                                n = l(b.cells[c]);
+                            if (C) {
+                                if ("" === f && "" !== n) return -1;
+                                if ("" === n && "" !== f) return 1
+                            }
+                            var x = +f - +n;
+                            f = isNaN(x) ? f.localeCompare(n) : x;
+                            return 0 === f && q.cells[c] && q.cells[c].hasAttribute("data-sort-tbr") ? y(b, e, +q.cells[c].dataset.sortTbr) : B ? -f : f
+                        }, r = 0; r < a.tBodies.length; r++) {
+                            var t = a.tBodies[r], z = [].slice.call(t.rows, 0);
+                            z.sort(function (b, e) {
+                                var c;
+                                return y(b, e, +(null !== (c = p.dataset.sortCol) && void 0 !== c ? c : p.cellIndex))
+                            });
+                            var u = t.cloneNode();
+                            u.append.apply(u, z);
+                            a.replaceChild(u, t)
+                        }
+                        a.dispatchEvent(new Event("sort-end",
+                            {bubbles: !0}))
+                    })(h, A)
+                }, 1).toString()
+            }
+        } catch {
+        }
+    });
 </script>
 
 <!--@formatter:off-->

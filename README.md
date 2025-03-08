@@ -10,17 +10,17 @@ Die Metadaten werden aus verschiedenen Quellen gewonnen. Zurzeit:
 
 ## Metadaten
 
-| Name                    | Quelle       | Format                                                                             |
-|-------------------------|--------------|------------------------------------------------------------------------------------|
-| Title                   | Podcast-Feed | string                                                                             |
-| Erwähnte Episoden       | Podcast-Feed | Array<number>                                                                      |
-| Erwähnte Zeitreferenzen | Podcast-Feed | Array<{ literal: string, mode: string, normalized: string, from: date, to: date }> |
-| Erwähnte Orte           | Podcast-Feed | Array<{ name: string, longitude: number, latitude: number }>                       |
-| Beschreibung            | Podcast-Feed | string                                                                             |
-| Dauer                   | Podcast-Feed | Number, in Sekunden                                                                |
-| Link zur Audio-Datei    | Podcast-Feed | string, URL                                                                        |
-| Erscheinungsdatum       | Podcast-Feed | string, Date                                                                       |
-| Link zur Webseite       | Podcast-Feed | string, URL                                                                        |
+| Name                    | Quelle            | Format                                                                             |
+|-------------------------|-------------------|------------------------------------------------------------------------------------|
+| Title                   | Podcast-Feed      | string                                                                             |
+| Erwähnte Episoden       | Podcast-Feed      | Array<number>                                                                      |
+| Erwähnte Zeitreferenzen | Podcast-Feed      | Array<{ literal: string, mode: string, normalized: string, from: date, to: date }> |
+| Erwähnte Orte           | Podcast-Feed (AI) | Array<{ name: string, longitude: number, latitude: number }>                       |
+| Beschreibung            | Podcast-Feed      | string                                                                             |
+| Dauer                   | Podcast-Feed      | Number, in Sekunden                                                                |
+| Link zur Audio-Datei    | Podcast-Feed      | string, URL                                                                        |
+| Erscheinungsdatum       | Podcast-Feed      | string, Date                                                                       |
+| Link zur Webseite       | Podcast-Feed      | string, URL                                                                        |
 
 Beispiel:
 
