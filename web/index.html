@@ -300,11 +300,10 @@
                                             <small>${link.start} - ${link.end}</small>
                                         `)}
                                 </td>
-                                <td class="col-locations no-sort">${e.locations
-                                        .map(location => html`
-                                            <a href="https://www.openstreetmap.org/#map=6/${location.latitude}/${location.longitude}"
-                                               title="${location.latitude}, ${location.longitude}">${location.name}</a>
-                                        `)}
+                                <td class="col-locations no-sort">${e.locations?.map(location => html`
+                                    <a href="https://www.openstreetmap.org/#map=6/${location.latitude}/${location.longitude}"
+                                       title="${location.latitude}, ${location.longitude}">${location.name}</a>
+                                `)}
                                 </td>
                                 <td class="col-description no-sort">
                                     <small>
