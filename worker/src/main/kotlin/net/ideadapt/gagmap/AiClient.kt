@@ -91,6 +91,11 @@ class AiClient(
         do {
             delay(1500)
             val retrievedRun = ai.getRun(threadId = aiThreadRun.threadId, runId = aiThreadRun.id)
+            logger.debug("Polled run {}: {}, error: {}", retrievedRun.id, retrievedRun.status, retrievedRun.lastError)
+
+            if (retrievedRun.status == Status.Failed) {
+                throw IllegalStateException("AI thread run ${retrievedRun.id} failed: ${retrievedRun.lastError}")
+            }
         } while (retrievedRun.status != Status.Completed)
 
         val output = ai.messages(aiThreadRun.threadId).mapNotNull {
