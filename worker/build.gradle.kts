@@ -12,12 +12,12 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0-RC")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-    implementation("com.aallam.openai:openai-client:3.8.2")
+    implementation("com.aallam.openai:openai-client:4.0.1")
     implementation("ch.qos.logback:logback-classic:1.4.14")
-    implementation("io.ktor:ktor-client-logging:2.3.12")
-    implementation("io.ktor:ktor-client-core:2.3.12")
-    implementation("io.ktor:ktor-client-java:2.3.12")
-    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-client-logging:3.3.3")
+    implementation("io.ktor:ktor-client-core:3.3.3")
+    implementation("io.ktor:ktor-client-java:3.3.3")
+    implementation("io.ktor:ktor-client-content-negotiation:3.3.3")
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation(libs.junit.jupiter.engine)

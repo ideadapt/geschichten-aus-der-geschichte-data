@@ -182,6 +182,7 @@ private fun extractEpisodeLinks(contentEncoded: String, episodeNumber: Int): Lis
     return episodeLinks
 }
 
+@Suppress("SimplifiableCallChain")
 private fun normalizeDescription(description: String) = description
     .lines()
     .filter { it.isNotBlank() }
