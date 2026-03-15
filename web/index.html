@@ -6,7 +6,7 @@
     <script src="./orb.min.js" defer></script>
     <script src="./vis-timeline-graph2d.standalone.min.js" defer></script>
     <link rel="stylesheet" href="./leaflet.css"/>
-    <link rel="ic on" type="image/x-icon" href="https://ideadapt.net/gag/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="https://ideadapt.net/gag/favicon.ico">
     <style>
         body, html {
             margin: 1rem;
@@ -110,6 +110,16 @@
         #map {
             height: 100vh;
         }
+        .mark-icon {
+            width: 24px;
+            height: 24px;
+            fill: black;
+            cursor: pointer;
+            transition: fill 0.2s ease;
+        }
+        .mark-icon.active {
+            fill: green;
+        }
     </style>
 </head>
 <body>
@@ -152,6 +162,15 @@
     </p>
     <p>Code und weitere Dokumentation auf <a href="https://github.com/ideadapt/geschichten-aus-der-geschichte-data">github.com/ideadapt/geschichten-aus-der-geschichte-data</a>
 </footer>
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+    <symbol id="icon-favorite" viewBox="0 0 24 24">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
+    </symbol>
+    <symbol id="icon-done" viewBox="0 0 24 24">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z"></path>
+    </symbol>
+</svg>
+
 
 <script type="module">
     import {html, render} from './htm-preact.standalone.module.js'
@@ -250,6 +269,45 @@
         return set;
     }, new Set())
 
+    let rowStates = {};
+    function loadRowStates() {
+        const storedData = localStorage.getItem('gag-row-states') || '';
+        const states = storedData.split(";").reduce((acc, entry) => {
+            if (!entry) return acc;
+            const [id, name, time, state] = entry.split('_');
+            acc[id+'_'+name] = {name, time, state};
+            return acc;
+        }, {});
+        rowStates = states;
+    }
+    loadRowStates();
+
+    function saveRowStates() {
+        const entries = Object.entries(rowStates)
+            .map(([stateId, value]) => `${stateId}_${value.time}_${value.state}`)
+        localStorage.setItem('gag-row-states', entries.join(';'))
+    }
+
+    function toggleMarkState(id, name, state) {
+        const stateId = id+'_'+name
+        const currentState = rowStates[stateId]
+        rowStates[stateId] = {
+            name,
+            time: Date.now(),
+            state: currentState?.state === '1' ? '0' : '1'
+        }
+        document.getElementById(stateId)?.classList.toggle('active')
+        document.getElementById('sort_'+id)?.setAttribute('data-sort', getSort(id))
+        saveRowStates()
+    }
+
+    function getSort(id) {
+        const f = rowStates[id+'_f']?.state
+        const d = rowStates[id+'_d']?.state
+        if ((f == null && d == null) || f === '0' && d === '0') return ''
+        return `${f}${d}`
+    }
+
     function renderDataTable(gagData) {
         const $table = document.getElementById("data-table")
         const gagDataById = groupBy(gagData, episode => episode.id)
@@ -259,6 +317,7 @@
                 <thead>
                 <tr>
                     <th class="col-id no-sort">Nr</th>
+                    <th>Status</th>
                     <th>Titel</th>
                     <th class="col-date">Erscheinungsdatum</th>
                     <th class="col-episode-links no-sort">Erwähnte Episoden</th>
@@ -275,6 +334,16 @@
                                     <a href="" id="${e.id}" class="episode-anchor"></a>
                                     <div class="anchor-marker"></div>
                                     <a href="${e.websiteUrl}" target="_blank">${e.id}</a>
+                                </td>
+                                <td data-sort="${getSort(e.id)}" id="sort_${e.id}">
+                                    <div class="mark-icons">
+                                        <svg id="${e.id+'_f'}" title="Favorite" class="mark-icon ${rowStates[e.id+'_f']?.state === '1' ? 'active' : ''}" onclick="${() => toggleMarkState(e.id, 'f')}">
+                                            <use href="#icon-favorite"></use>
+                                        </svg>
+                                        <svg id="${e.id+'_d'}" title="Done" class="mark-icon ${rowStates[e.id+'_d']?.state === '1' ? 'active' : ''}" onclick=${() => toggleMarkState(e.id, 'd')}>
+                                            <use href="#icon-done"></use>
+                                        </svg>                                      
+                                    </div>
                                 </td>
                                 <td>${e.title}</td>
                                 <td class="col-date" data-sort="${new Date(e.date).getTime()}">
