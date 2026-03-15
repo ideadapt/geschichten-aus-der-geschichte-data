@@ -169,6 +169,9 @@
     <symbol id="icon-done" viewBox="0 0 24 24">
         <path d="M9 16.17L4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z"></path>
     </symbol>
+    <symbol id="icon-download" viewBox="0 0 24 24">
+        <path d="M5 20h14v-2H5v2zm7-18v10.59l3.29-3.3 1.41 1.41L12 16l-4.71-4.71 1.41-1.41L11 12.59V2h2z"></path>
+    </symbol>
 </svg>
 
 
@@ -317,6 +320,7 @@
                 <thead>
                 <tr>
                     <th class="col-id no-sort">Nr</th>
+                    <th></th>
                     <th>Status</th>
                     <th>Titel</th>
                     <th class="col-date">Erscheinungsdatum</th>
@@ -334,6 +338,13 @@
                                     <a href="" id="${e.id}" class="episode-anchor"></a>
                                     <div class="anchor-marker"></div>
                                     <a href="${e.websiteUrl}" target="_blank">${e.id}</a>
+                                </td>
+                                <td>
+                                    <a href="${e.audioUrl}" target="_blank" title="Audio herunterladen">
+                                        <svg class="mark-icon">
+                                            <use href="#icon-download"></use>
+                                        </svg>
+                                    </a>
                                 </td>
                                 <td data-sort="${getSort(e.id)}" id="sort_${e.id}">
                                     <div class="mark-icons">
