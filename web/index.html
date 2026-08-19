@@ -503,6 +503,24 @@
             setCurrentPage(0);
         }, [searchTerm]);
 
+        const paginationMarkup = html`
+            <div class="pagination-controls">
+                <button 
+                    class="pagination-btn"
+                    disabled=${currentPage === 0} 
+                    onclick=${() => setCurrentPage(p => p - 1)}>
+                    « Zurück
+                </button>
+                <span class="pagination-info">Seite ${currentPage + 1} von ${totalPages > 0 ? totalPages : 1}</span>
+                <button 
+                    class="pagination-btn"
+                    disabled=${currentPage >= totalPages - 1} 
+                    onclick=${() => setCurrentPage(p => p + 1)}>
+                    Weiter »
+                </button>
+            </div>
+        `;
+
         return html`
             <div class="data-table-controls">
                 <input 
@@ -513,6 +531,8 @@
                     class="search-input"
                 />
             </div>
+            
+            ${paginationMarkup}
             
             <table class="sortable asc sticky n-last">
                 <thead>
@@ -595,21 +615,7 @@
                 </tbody>
             </table>
 
-            <div class="pagination-controls">
-                <button 
-                    class="pagination-btn"
-                    disabled=${currentPage === 0} 
-                    onclick=${() => setCurrentPage(p => p - 1)}>
-                    « Zurück
-                </button>
-                <span class="pagination-info">Seite ${currentPage + 1} von ${totalPages > 0 ? totalPages : 1}</span>
-                <button 
-                    class="pagination-btn"
-                    disabled=${currentPage >= totalPages - 1} 
-                    onclick=${() => setCurrentPage(p => p + 1)}>
-                    Weiter »
-                </button>
-            </div>
+            ${paginationMarkup}
         `;
     }
 
