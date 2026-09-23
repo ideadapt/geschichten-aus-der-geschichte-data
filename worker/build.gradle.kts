@@ -12,8 +12,8 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0-RC")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-    implementation("com.aallam.openai:openai-client:4.0.1")
-    implementation("ch.qos.logback:logback-classic:1.4.14")
+    implementation("com.openai:openai-java:4.65.0")
+    implementation("ch.qos.logback:logback-classic:1.5.13")
     implementation("io.ktor:ktor-client-logging:3.3.3")
     implementation("io.ktor:ktor-client-core:3.3.3")
     implementation("io.ktor:ktor-client-java:3.3.3")

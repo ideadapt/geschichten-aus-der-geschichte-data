@@ -1,22 +1,13 @@
 package net.ideadapt.gagmap
 
-import com.aallam.openai.api.BetaOpenAI
-import com.aallam.openai.api.assistant.AssistantRequest
-import com.aallam.openai.api.core.Role
-import com.aallam.openai.api.core.Status
-import com.aallam.openai.api.logging.LogLevel
-import com.aallam.openai.api.logging.Logger
-import com.aallam.openai.api.message.MessageContent
-import com.aallam.openai.api.model.ModelId
-import com.aallam.openai.api.run.ThreadRunRequest
-import com.aallam.openai.api.thread.ThreadMessage
-import com.aallam.openai.api.thread.threadRequest
-import com.aallam.openai.client.LoggingConfig
-import com.aallam.openai.client.OpenAI
-import com.aallam.openai.client.OpenAIConfig
-import kotlinx.coroutines.delay
+import com.openai.client.OpenAIClient
+import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.core.LogLevel
+import com.openai.models.responses.ResponseCreateParams
+import com.openai.models.responses.Tool
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
+import java.util.stream.Collectors
 
 /**
  * OpenAI client featuring methods to analyze gag episode descriptions:
@@ -24,24 +15,15 @@ import org.slf4j.LoggerFactory
  */
 class AiClient(
     private val token: String = requireNotNull(Config.get("OPEN_AI_TOKEN")) { "OPEN_AI_TOKEN missing" },
-    private val ai: OpenAI = OpenAI(
-        config = OpenAIConfig(
-            token = token,
-            logging = LoggingConfig(LogLevel.Info, Logger.Default),
-        )
-    )
+    private val ai: OpenAIClient = OpenAIOkHttpClient.builder().apiKey(token).logLevel(LogLevel.INFO).build()
 ) {
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
-    @OptIn(BetaOpenAI::class)
-    suspend fun extractGeoLocations(texts: Map<Int, String>): Map<Int, List<Location>?> {
+    fun extractGeoLocations(texts: Map<Int, String>): Map<Int, List<Location>?> {
         logger.debug("Extracting geo locations")
-        val assistantName = "asst_gag-map_geo-locations_v7"
-        val assistant = ai.assistants().find { it.name == assistantName } ?: ai.assistant(
-            AssistantRequest(
-                name = assistantName,
-                model = ModelId("gpt-4o-mini"),
-                instructions = """
+
+        val params: ResponseCreateParams = ResponseCreateParams.builder().instructions(
+            """
         |# Context
         |You can extract location data (coordinates and names) from description texts.
         |You know coordinates of places, buildings, villages, cities, street names, regions and countries.
@@ -58,7 +40,7 @@ class AiClient(
         |   
         |  Hint: The format for the coordinates (latitude and longitude) is decimal degrees (DD), e.g. 41.40338, 2.17403.
         |  
-        |  4. Output the ID from step 0, followed by a colon ":" and then the JSON array (all on one line).
+        |  4. Output the ID from step 0, followed by a colon ":" and then the JSON array (all on one line). DO NOT ADD ANY PRE- POST-TEXT, just the plain extracted data.
         |  5. Proceed with the next line.
         |  
         |# Example
@@ -73,44 +55,19 @@ class AiClient(
         |2:[{"name": "Switzerland", "latitude": 46.91269861851872, "longitude": 8.240502621260882},{"name": "Berlin", "latitude": 52.51812698340202, "longitude": 13.415805358960382}]
         |""".trimMargin()
             )
-        )
+            .input(texts.map { it.key.toString() + "," + it.value }.joinToString("\n"))
+            .addCodeInterpreterTool(Tool.CodeInterpreter.Container.CodeInterpreterToolAuto.builder().build())
+            .model("gpt-4o-mini")
+            .build()
 
-        val aiThreadRun = ai.createThreadRun(
-            request = ThreadRunRequest(
-                assistantId = assistant.id,
-                thread = threadRequest {
-                    messages = listOf(
-                        ThreadMessage(
-                            content = texts.map { it.key.toString() + "," + it.value }.joinToString("\n"),
-                            role = Role.User
-                        )
-                    )
-                }
-            ))
+        val geoLocationLines = ai.responses().create(params).output().stream()
+            .flatMap { item -> item.message().stream() }
+            .flatMap { message -> message.content().stream() }
+            .flatMap { content -> content.outputText().stream() }
+            .map { text -> text.text() }
+            .collect(Collectors.toList()).first().lines()
 
-        do {
-            delay(1500)
-            val retrievedRun = ai.getRun(threadId = aiThreadRun.threadId, runId = aiThreadRun.id)
-            logger.debug("Polled run {}: {}, error: {}", retrievedRun.id, retrievedRun.status, retrievedRun.lastError)
-
-            if (retrievedRun.status == Status.Failed) {
-                throw IllegalStateException("AI thread run ${retrievedRun.id} failed: ${retrievedRun.lastError}")
-            }
-        } while (retrievedRun.status != Status.Completed)
-
-        val output = ai.messages(aiThreadRun.threadId).mapNotNull {
-            val text = it.content.first() as? MessageContent.Text
-            if (text == null) logger.error("Expected MessageContent.Text. Ignoring message ${it.id}.")
-            text
-        }
-            .map { it.text.value }
-            .first() // 1: locations, 2: the prompt
-
-        val geoLocationsLines = output.lines()
-
-        ai.delete(aiThreadRun.threadId)
-
-        return geoLocationsLines
+        return geoLocationLines
             .associate {
                 val episodeId = try {
                     it.substringBefore(":").toInt()
