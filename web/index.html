@@ -2,156 +2,324 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Geschichten aus der Geschichte - Episoden Daten</title>
     <script src="./orb.min.js" defer></script>
     <script src="./vis-timeline-graph2d.standalone.min.js" defer></script>
     <link rel="stylesheet" href="./leaflet.css"/>
     <link rel="icon" type="image/x-icon" href="https://ideadapt.net/gag/favicon.ico">
+    <!-- Google Fonts for Academic Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #FAFAFA;
+            --text-color: #1A1A24;
+            --accent-color: #8B1E0F; /* Classic crimson */
+            --accent-hover: #A02B1A;
+            --border-color: #E0E0E0;
+            --highlight-bg: rgba(139, 30, 15, 0.08);
+            --font-serif: 'Lora', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
         body, html {
-            margin: 1rem;
+            margin: 0;
             padding: 0;
-            font-family: Roboto, sans-serif;
+            font-family: var(--font-serif);
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            line-height: 1.6;
+        }
+
+        /* Container for responsive layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-serif);
+            font-weight: 600;
+            color: var(--text-color);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+
+        /* Responsive Wrappers */
+        .responsive-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            margin-bottom: 2rem;
+        }
+
+        #graph, #map {
+            width: 100%;
+            height: 65vh;
+            min-height: 400px;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #F0F0F5;
+            padding: 0.75rem 0.5rem;
+            text-align: left;
+            font-weight: 500;
+            color: #333;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        th:hover:not(.no-sort) {
+            cursor: pointer;
+            background-color: #E8E8ED;
         }
 
         tr td:first-child {
             border-left: 5px solid transparent;
         }
 
-        th:hover:not(.no-sort) {
-            cursor: pointer;
-        }
-
-        #graph {
-            width: 100%;
-            height: 100vw;
-            border: 1px solid #ddd;
-        }
-
-        .vis-item {
-            font-size: 12px;
-        }
-
-        .vis-item.vis-dot {
-            background-color: #D19000;
-            border-color: #D19000;
-        }
-
-        table td {
-            padding: 2px;
-        }
-
-        .col-id {
-            position: relative;
-        }
-
-        .episode-anchor {
-            position: absolute;
-            display: block;
-            width: 1px;
-            top: -20px;
-        }
-
-        .anchor-marker {
-            width: 0;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: -5px;
-        }
-
-        tr:has(.episode-anchor:target) {
-            background-color: rgba(209, 144, 0, 0.2);
-        }
-
-        .episode-anchor:target + .anchor-marker {
-            border-left: 5px solid #D19000;
+        td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
         }
 
         tr:hover {
-            background-color: rgba(209, 144, 0, 0.2);
+            background-color: var(--highlight-bg);
         }
 
+        /* Vis timeline overrides */
+        .vis-item {
+            font-family: var(--font-sans);
+            font-size: 12px;
+            border-color: var(--accent-color);
+            background-color: #fff;
+        }
+        .vis-item.vis-dot {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        /* Anchors */
+        .col-id { position: relative; }
+        .episode-anchor {
+            position: absolute; display: block; width: 1px; top: -60px;
+        }
+        .anchor-marker {
+            width: 0; height: 100%; position: absolute; top: 0; left: -5px;
+        }
+        tr:has(.episode-anchor:target) {
+            background-color: var(--highlight-bg);
+        }
+        .episode-anchor:target + .anchor-marker {
+            border-left: 5px solid var(--accent-color);
+        }
+
+        /* Utility columns */
         .col-episode-links a {
-            display: inline-block;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            margin-right: 6px;
+            display: inline-block; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 6px;
         }
-
         .col-temporal-links span {
-            display: inline-block;
-            margin-right: 4px;
+            display: inline-block; margin-right: 4px;
         }
+        .col-temporal-links span:not(:last-of-type)::after { content: "," }
+        .col-date { text-align: right; white-space: nowrap; }
+        .col-description { min-width: 300px; }
+        .col-locations { min-width: 150px; }
+        .col-locations a:not(:last-child) { margin-right: 1ex; }
 
-        .col-temporal-links span:not(:last-of-type)::after {
-            content: ","
-        }
-
-        .col-date {
-            text-align: right;
-        }
-
-        .col-description {
-            width: 30%;
-        }
-
-        .col-locations {
-            width: 10%;
-            max-width: 100px;
-        }
-
-        .col-locations a:not(:last-child) {
-            margin-right: 1ex;
-        }
-
-        #map {
-            height: 100vh;
-        }
         .mark-icon {
-            width: 24px;
-            height: 24px;
-            fill: black;
-            cursor: pointer;
-            transition: fill 0.2s ease;
+            width: 24px; height: 24px; fill: #666; cursor: pointer; transition: fill 0.2s ease;
         }
-        .mark-icon.active {
-            fill: green;
+        .mark-icon.active { fill: var(--accent-color); }
+        
+        .header-nav {
+            background: #fff;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 2rem;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+        }
+        .header-nav p { margin: 0.5rem 0; }
+        
+        footer {
+            margin-top: 3rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            color: #666;
+            text-align: center;
+        }
+        /* Search and Pagination Controls */
+        .data-table-controls {
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .search-input {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+            font-family: var(--font-sans);
+        }
+        .pagination-controls {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            font-family: var(--font-sans);
+        }
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Mobile Card Layout for Table */
+        @media (max-width: 768px) {
+            table {
+                border: 0;
+            }
+            table thead {
+                display: none;
+            }
+            table tr {
+                display: block;
+                margin-bottom: 1.5rem;
+                background: #fff;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                padding: 1rem;
+            }
+            table td {
+                display: flex;
+                flex-direction: column;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid #eee;
+                text-align: left;
+            }
+            table td:last-child {
+                border-bottom: 0;
+            }
+            table td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                color: #888;
+                margin-bottom: 0.25rem;
+                font-family: var(--font-sans);
+            }
+            .col-date { text-align: left; }
+            .col-description { min-width: auto; }
+            .col-locations { min-width: auto; }
+            
+            .data-table-controls {
+                justify-content: center;
+            }
+            .search-input {
+                max-width: 100%;
+            }
+            
+            /* Remove horizontal scrolling wrapper since cards handle this */
+            .responsive-wrapper {
+                overflow-x: visible;
+                background: transparent;
+                border: none;
+                box-shadow: none;
+            }
         }
     </style>
 </head>
 <body>
-<p>Diese Seite zeigt Metadaten der regulären Episoden (keine Feedback- oder Extra- / Bonus-Episoden) des Podcasts
-    "Geschichten aus der Geschichte", siehe <a
-            href="https://geschichte.fm">geschichte.fm</a>.</p>
-<p>Springe direkt zu: <a href="#graph">Netzwerk-Graph</a>, <a href="#timeline">Zeitachse</a>, <a href="#map">Karte</a>
-</p>
-<small>Klicke auf Spalten-Titel um zu sortieren.</small>
-<div id="raw-data">
-    <div id="data-table">
-        🔄 Lade Tabelle
+<div class="container">
+    <header>
+        <h1>Geschichten aus der Geschichte</h1>
+        <h2>Episoden-Datenhub</h2>
+    </header>
+    
+    <div class="header-nav">
+        <p>Diese Seite zeigt strukturierte Metadaten der regulären Episoden des Podcasts "Geschichten aus der Geschichte", siehe <a href="https://geschichte.fm" target="_blank">geschichte.fm</a>.</p>
+        <p>Springe direkt zu: <a href="#graph-section">Netzwerk-Graph</a> &bull; <a href="#timeline-section">Zeitachse</a> &bull; <a href="#map-section">Karte</a></p>
+        <p><small>Tipp: Klicke auf die Spalten-Titel in der Tabelle, um zu sortieren.</small></p>
     </div>
-</div>
-<h2>Episodenverweise &dash; Netzwerk-Graph</h2>
-<p>Doppelklick auf Kreis / Knotenpunkt um zur Episode zu springen. Scrollen um zu zoomen. Klick + Ziehen um zu
-    verschieben.</p>
-<div id="graph">🔄 Lade Netzwerk-Graph</div>
-<h2>Episode auf Zeitachse / Timeline</h2>
-<p>Zeigt nur Episoden mit Zeitreferenzen. Es wird die erste Zeitreferenz verwendet, das ist die präziseste.</p>
-<p>Doppelklick auf Name um zur Episode zu springen. Scrollen + CTRL um zu zoomen. Klick + Ziehen um zu
-    verschieben.</p>
-<div id="timeline">
-    <div id="vis-timeline">🔄 Lade Zeitachse</div>
-</div>
-<h2>Episoden auf Karte (Work in Progress)</h2>
-<p>Zeigt nur Episoden mit Ortsangaben. Falls mehrere Ortsangaben in einer Episode vorkommen, wird die Episode mehrfach
-    angezeigt.</p>
-<p>Doppelklick auf Name um zur Episode zu springen. Scrollen um zu zoomen. Klick + Ziehen um zu
-    verschieben.</p>
-<div id="map">
-    <div id="vis-map">🔄 Lade Karte</div>
+
+    <div id="raw-data">
+        <div class="responsive-wrapper">
+            <div id="data-table">
+                <div style="padding: 2rem; text-align: center; font-family: var(--font-sans);">🔄 Lade Tabelle...</div>
+            </div>
+        </div>
+    </div>
+
+    <h2 id="graph-section">Episodenverweise &dash; Netzwerk-Graph</h2>
+    <p class="header-nav">Doppelklick auf einen Knotenpunkt, um zur Episode zu springen. Scrollen zum Zoomen. Klicken und Ziehen zum Verschieben.</p>
+    <div class="responsive-wrapper">
+        <div id="graph"><div style="padding: 2rem; text-align: center; font-family: var(--font-sans);">🔄 Lade Netzwerk-Graph...</div></div>
+    </div>
+
+    <h2 id="timeline-section">Episoden auf der Zeitachse</h2>
+    <p class="header-nav">Zeigt nur Episoden mit Zeitreferenzen. Es wird die erste (präziseste) Zeitreferenz verwendet.<br>
+    Doppelklick auf einen Namen, um zur Episode zu springen. Scrollen + CTRL zum Zoomen.</p>
+    <div class="responsive-wrapper">
+        <div id="vis-timeline"><div style="padding: 2rem; text-align: center; font-family: var(--font-sans);">🔄 Lade Zeitachse...</div></div>
+    </div>
+
+    <h2 id="map-section">Episoden auf der Karte (Work in Progress)</h2>
+    <p class="header-nav">Zeigt Episoden mit Ortsangaben. Mehrere Orte pro Episode erzeugen mehrere Marker.<br>
+    Doppelklick auf den Namen, um zur Episode zu springen. Scrollen zum Zoomen.</p>
+    <div class="responsive-wrapper">
+        <div id="vis-map"><div style="padding: 2rem; text-align: center; font-family: var(--font-sans);">🔄 Lade Karte...</div></div>
+    </div>
 </div>
 <hr>
 <footer>
@@ -176,7 +344,7 @@
 
 
 <script type="module">
-    import {html, render} from './htm-preact.standalone.module.js'
+    import {html, render, useState, useMemo} from './htm-preact.standalone.module.js'
 
     function renderTimeline(gagData) {
         const $container = document.getElementById('vis-timeline');
@@ -311,11 +479,64 @@
         return `${f}${d}`
     }
 
-    function renderDataTable(gagData) {
-        const $table = document.getElementById("data-table")
-        const gagDataById = groupBy(gagData, episode => episode.id)
-        $table.innerHTML = ''
-        render(html`
+    function DataTable({gagData, gagDataById}) {
+        const [searchTerm, setSearchTerm] = useState('');
+        const [currentPage, setCurrentPage] = useState(0);
+        const pageSize = 20;
+
+        const filteredData = useMemo(() => {
+            if (!searchTerm) return gagData;
+            const term = searchTerm.toLowerCase();
+            return gagData.filter(e => 
+                e.title.toLowerCase().includes(term) || 
+                (e.description && e.description.toLowerCase().includes(term)) ||
+                e.id.toString().includes(term)
+            );
+        }, [gagData, searchTerm]);
+
+        const pageData = useMemo(() => {
+            const start = currentPage * pageSize;
+            return filteredData.slice(start, start + pageSize);
+        }, [filteredData, currentPage]);
+
+        const totalPages = Math.ceil(filteredData.length / pageSize);
+
+        // Reset page to 0 when search term changes
+        useMemo(() => {
+            setCurrentPage(0);
+        }, [searchTerm]);
+
+        const paginationMarkup = html`
+            <div class="pagination-controls">
+                <button 
+                    class="pagination-btn"
+                    disabled=${currentPage === 0} 
+                    onclick=${() => setCurrentPage(p => p - 1)}>
+                    « Zurück
+                </button>
+                <span class="pagination-info">Seite ${currentPage + 1} von ${totalPages > 0 ? totalPages : 1}</span>
+                <button 
+                    class="pagination-btn"
+                    disabled=${currentPage >= totalPages - 1} 
+                    onclick=${() => setCurrentPage(p => p + 1)}>
+                    Weiter »
+                </button>
+            </div>
+        `;
+
+        return html`
+            <div class="data-table-controls">
+                <input 
+                    type="search" 
+                    placeholder="Suchen nach Episoden, Titeln..." 
+                    value=${searchTerm} 
+                    onInput=${e => setSearchTerm(e.target.value)} 
+                    class="search-input"
+                />
+            </div>
+            
+            ${paginationMarkup}
+            
             <table class="sortable asc sticky n-last">
                 <thead>
                 <tr>
@@ -331,22 +552,22 @@
                     <th>Dauer</th>
                 </tr>
                 </thead>
-                <tbody>${gagData.map(e =>
+                <tbody>${pageData.map(e =>
                         html`
                             <tr>
-                                <td class="col-id no-sort">
+                                <td data-label="Nr" class="col-id no-sort">
                                     <a href="" id="${e.id}" class="episode-anchor"></a>
                                     <div class="anchor-marker"></div>
                                     <a href="${e.websiteUrl}" target="_blank">${e.id}</a>
                                 </td>
-                                <td>
+                                <td data-label="Audio">
                                     <a href="${e.audioUrl}" target="_blank" title="Audio herunterladen">
                                         <svg class="mark-icon">
                                             <use href="#icon-download"></use>
                                         </svg>
                                     </a>
                                 </td>
-                                <td data-sort="${getSort(e.id)}" id="sort_${e.id}">
+                                <td data-label="Status" data-sort="${getSort(e.id)}" id="sort_${e.id}">
                                     <div class="mark-icons">
                                         <svg id="${e.id+'_f'}" title="Favorite" class="mark-icon ${rowStates[e.id+'_f']?.state === '1' ? 'active' : ''}" onclick="${() => toggleMarkState(e.id, 'f')}">
                                             <use href="#icon-favorite"></use>
@@ -356,8 +577,8 @@
                                         </svg>                                      
                                     </div>
                                 </td>
-                                <td>${e.title}</td>
-                                <td class="col-date" data-sort="${new Date(e.date).getTime()}">
+                                <td data-label="Titel">${e.title}</td>
+                                <td data-label="Erscheinungsdatum" class="col-date" data-sort="${new Date(e.date).getTime()}">
                                     ${new Date(e.date).toLocaleString("de", {
                                     month: "short",
                                     year: "numeric",
@@ -366,13 +587,13 @@
                                     minute: "2-digit"
                                 }).replace(",", "")}
                                 </td>
-                                <td class="col-episode-links no-sort">${e.episodeLinks
+                                <td data-label="Erwähnte Episoden" class="col-episode-links no-sort">${e.episodeLinks
                                         .map(episodeId => (gagDataById[episodeId]))
                                         .map(episode => (episode && html`
                                             <a title="${episode.title}" href="#${episode.id}">${episode.title}</a>
                                         `) || "")}
                                 </td>
-                                <td class="col-temporal-links"
+                                <td data-label="Zeitangaben" class="col-temporal-links"
                                     data-sort="${new Date(e.temporalLinks[0]?.start?.startsWith("-") ? e.temporalLinks[0]?.start.replace("-", "-00") : e.temporalLinks[0]?.start).getTime() || ''}">
                                     ${e.temporalLinks
                                         .map(link => html`
@@ -380,22 +601,32 @@
                                             <small>${link.start} - ${link.end}</small>
                                         `)}
                                 </td>
-                                <td class="col-locations no-sort">${e.locations?.map(location => html`
+                                <td data-label="Ortsbezüge" class="col-locations no-sort">${e.locations?.map(location => html`
                                     <a href="https://www.openstreetmap.org/#map=6/${location.latitude}/${location.longitude}"
                                        title="${location.latitude}, ${location.longitude}">${location.name}</a>
                                 `)}
                                 </td>
-                                <td class="col-description no-sort">
+                                <td data-label="Beschreibung" class="col-description no-sort">
                                     <small>
                                         ${e.description}
                                     </small>
                                 </td>
-                                <td>${new Date(e.durationInSeconds * 1000).toISOString().substring(11, 19)}</td>
+                                <td data-label="Dauer">${new Date(e.durationInSeconds * 1000).toISOString().substring(11, 19)}</td>
                             </tr>
                         `
                 )}
                 </tbody>
-            </table>`, $table)
+            </table>
+
+            ${paginationMarkup}
+        `;
+    }
+
+    function renderDataTable(gagData) {
+        const $table = document.getElementById("data-table")
+        const gagDataById = groupBy(gagData, episode => episode.id)
+        $table.innerHTML = ''
+        render(html`<${DataTable} gagData=${gagData} gagDataById=${gagDataById} />`, $table)
     }
 
     function renderMap(gagData) {
